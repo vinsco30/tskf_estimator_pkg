@@ -89,7 +89,7 @@ TSKF::TSKF() {
      0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0;
 
     _A_k << 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-     0, 0, 0, 0, 0, 0, -_gravity, 0, 0, 0, 0, 0,
+     0, 0, 0, 0, 0, 0, _gravity, 0, 0, 0, 0, 0,
      0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0,
      0, 0, 0, 0, 0, 0, 0, 0, -_gravity, 0, 0, 0,
      0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0,
@@ -101,10 +101,24 @@ TSKF::TSKF() {
      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0;
 
+    _B_k << 0.0, 0.0, 0.0, 0.0,
+    0.0, 0.0, 0.0, 0.0,
+    0.0, 0.0, 0.0, 0.0,
+    0.0, 0.0, 0.0, 0.0,
+    0.0, 0.0, 0.0, 0.0, //fino a qui non cambia nulla
+    0.0, 0.0, 0.0, 0.0, //qui ci va il corrispettivo di K/m
+    0.0, 0.0, 0.0, 0.0, //restano tutti zeri
+    0.0, 0.0, 0.0, 0.0, //vanno modificate la colonna 1 e 3
+    0.0, 0.0, 0.0, 0.0, //restano tutti zeri
+    0.0, 0.0, 0.0, 0.0, //vanno modificati colonna 2 e 4
+    0.0, 0.0, 0.0, 0.0, //restano tutti zeri
+    0.0, 0.0, 0.0, 0.0, //vengono modificate tutte le colonne ma vedere bene motori!!
+
     _odom_sub = _nh.subscribe(_model_name + "/odometry", 0, &TSKF::odometry_cb, this); 
     _mot_vel_sub = _nh.subscribe < std_msgs::Float32MultiArray > (_model_name + "/cmd/motor_vel", 0, &TSKF::mot_vel_cb, this);
     _motori = _nh.advertise<std_msgs::Float32MultiArray>("/cmd/motor_filter", 0);   
     _yy = _nh.advertise<std_msgs::Float32MultiArray>( "/y_kk", 0 );   
+    _x_estim = _nh.advertise<std_msgs::Float32MultiArray>( "/estim_states", 0 );
 }
 
 void TSKF::odometry_cb (const nav_msgs::Odometry odometry_msg) {
@@ -138,7 +152,7 @@ void TSKF::mot_vel_cb (const std_msgs::Float32MultiArray mot_vel) {
 
 void TSKF::change_u ( Eigen::Vector4d motor_vel ) {
     _u_k << motor_vel[0], motor_vel[1], motor_vel[2], motor_vel[3];
-    _u_k = _u_k*0.01;
+    //_u_k = _u_k*_par;
 }
 
 
@@ -147,10 +161,18 @@ void TSKF::publisher_test() {
     ros::Rate r(100);
     std_msgs::Float32MultiArray veloc;
     std_msgs::Float32MultiArray ykk;
+    std_msgs::Float32MultiArray x_stim;
+    x_stim.data.resize(12);
     veloc.data.resize( _motor_num );
     ykk.data.resize(6);
 
     while( ros::ok() ) {
+        
+        estimation(_u_k, _y_kk, _gamma);
+
+        for( int i=0; i<12; i++ ) {
+            x_stim.data[i] = _x_tilde[i];
+        }
 
         for( int i=0; i<_motor_num; i++ ) {
             veloc.data[i] = _u_k(i);
@@ -162,6 +184,7 @@ void TSKF::publisher_test() {
 
         _motori.publish( veloc );
         _yy.publish( ykk );
+        _x_estim.publish( x_stim );
 
         r.sleep();
     }
@@ -193,20 +216,33 @@ bool TSKF::generate_allocation_matrix(Eigen::MatrixXd & allocation_M,
     return true;
 }
 
-void TSKF::tskf_matrix_generation( Eigen::MatrixXd allocation_matrix ) {
+void TSKF::tskf_matrix_generation( Eigen::MatrixXd allocation_M ) {
     Eigen::Matrix<double,12,12> I_12;           //matrice identità
-    _A_k = I_12 + _A_k*_Ts;
+    _A_k = I_12 + _A_k*_Ts; //matrice sistema linearizzato discretizzata
+
+    Eigen::Matrix<double,12,4> B;
+    B = _B_k;    
+    B(5,0) = _motor_force_k/_mass; B(5,1) = _motor_force_k/_mass; B(5,2) = _motor_force_k/_mass; B(5,1) = _motor_force_k/_mass;
+    
+    B(7,0) = -allocation_M(1,0)/_inertia(1,1); B(7,1) = -allocation_M(1,1)/_inertia(1,1);  
+    B(7,2) = -allocation_M(1,2)/_inertia(1,1); B(7,3) = -allocation_M(1,3)/_inertia(1,1);
+    
+    B(9,0) = allocation_M(0,0)/_inertia(0,0); B(9,1) = allocation_M(0,1)/_inertia(0,0); 
+    B(9,2) = allocation_M(0,2)/_inertia(0,0); B(9,3) = allocation_M(0,3)/_inertia(0,0);
+    
+    B(11,0) = -allocation_M(2,0)/_inertia(2,2); B(11,1) = -allocation_M(2,1)/_inertia(2,2);
+    B(11,2) = -allocation_M(2,2)/_inertia(2,2); B(11,3) = -allocation_M(2,3)/_inertia(2,2);
+
+    _B_k = B*_Ts;
+
+    
 }
 
 void TSKF::estimation(Eigen::Vector4d u, Eigen::MatrixXd y, Eigen::Vector4d pr_gamma) {
     
     ros::Rate r( 100 );
 
-    Eigen::MatrixXd allocation_M;
-    if(!generate_allocation_matrix( allocation_M, _motor_num, _rotor_angles, _arm_length, _motor_force_k, _motor_moment_k, _motor_rotation_direction ) ) {     
-        cout << "Wrong allocation matrix" << endl;
-        exit(0);
-    }
+
     //Variabili del tskf usate solo in estimation
     Eigen::Matrix<double,12,4> W_k;             //coupling
     Eigen::Matrix<double,4,4> P_gamma_kk_k;     //predizione P_gamma
@@ -230,6 +266,14 @@ void TSKF::estimation(Eigen::Vector4d u, Eigen::MatrixXd y, Eigen::Vector4d pr_g
     0.0, u[1], 0.0, 0.0,
     0.0, 0.0, u[2], 0.0,
     0.0, 0.0, 0.0, u[3];
+
+    Eigen::MatrixXd allocation_M;
+    if(!generate_allocation_matrix( allocation_M, _motor_num, _rotor_angles, _arm_length, _motor_force_k, _motor_moment_k, _motor_rotation_direction ) ) {     
+        cout << "Wrong allocation matrix" << endl;
+        exit(0);
+    }
+
+    tskf_matrix_generation(allocation_M);
 
     while (ros::ok() ) {
 
@@ -262,6 +306,7 @@ void TSKF::estimation(Eigen::Vector4d u, Eigen::MatrixXd y, Eigen::Vector4d pr_g
 
 void TSKF::run() {
 
+    //boost::thread estimation_t( &TSKF::estimation, this );
     boost::thread publishr_test_t( &TSKF::publisher_test, this );
     ros::spin();
 }
