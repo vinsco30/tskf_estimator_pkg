@@ -18,8 +18,8 @@ class TSKF {
         TSKF();
 
         void set_matrix(double mass_, Eigen::Matrix3d J_, double gravity_, double K_);
-        void estimation(Eigen::Vector4d pwm, Eigen::MatrixXd y, Eigen::Vector4d pr_gamma);
-        //void estimation();
+        //void estimation(Eigen::Vector4d pwm, Eigen::MatrixXd y, Eigen::Vector4d pr_gamma);
+        void estimation();
         void change_y( Eigen::Vector3d p, Eigen::Vector3d w );
         void change_u( Eigen::Vector4d motor_vel );
         void odometry_cb(const nav_msgs::Odometry odometry_msg);

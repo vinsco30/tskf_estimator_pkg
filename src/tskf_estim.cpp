@@ -168,7 +168,6 @@ void TSKF::publisher_test() {
 
     while( ros::ok() ) {
         
-        estimation(_u_k, _y_kk, _gamma);
 
         for( int i=0; i<12; i++ ) {
             x_stim.data[i] = _x_tilde[i];
@@ -238,7 +237,7 @@ void TSKF::tskf_matrix_generation( Eigen::MatrixXd allocation_M ) {
     
 }
 
-void TSKF::estimation(Eigen::Vector4d u, Eigen::MatrixXd y, Eigen::Vector4d pr_gamma) {
+void TSKF::estimation() {
     
     ros::Rate r( 100 );
 
@@ -261,11 +260,7 @@ void TSKF::estimation(Eigen::Vector4d u, Eigen::MatrixXd y, Eigen::Vector4d pr_g
     I_4.diagonal() << 1.0, 1.0, 1.0, 1.0;
     I_12.diagonal() << 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
      1.0, 1.0, 1.0, 1.0, 1.0, 1.0;
-    
-    U << u[0], 0.0, 0.0, 0.0,
-    0.0, u[1], 0.0, 0.0,
-    0.0, 0.0, u[2], 0.0,
-    0.0, 0.0, 0.0, u[3];
+
 
     Eigen::MatrixXd allocation_M;
     if(!generate_allocation_matrix( allocation_M, _motor_num, _rotor_angles, _arm_length, _motor_force_k, _motor_moment_k, _motor_rotation_direction ) ) {     
@@ -277,6 +272,11 @@ void TSKF::estimation(Eigen::Vector4d u, Eigen::MatrixXd y, Eigen::Vector4d pr_g
 
     while (ros::ok() ) {
 
+        U << _u_k[0], 0.0, 0.0, 0.0,
+        0.0, _u_k[1], 0.0, 0.0,
+        0.0, 0.0, _u_k[2], 0.0,
+        0.0, 0.0, 0.0, _u_k[3];
+
         W_k = _A_k*_V_kk_kk - _B_k*U; //coupling equation (26)
         P_gamma_kk_k = _P_gamma_kk_kk + _Qgamma; //optimal bias estimator (15)
         gamma_pred = _gamma; //OBE (14)
@@ -285,7 +285,7 @@ void TSKF::estimation(Eigen::Vector4d u, Eigen::MatrixXd y, Eigen::Vector4d pr_g
         P_x_kk_k = _A_k*_P_x_kk_kk*_A_k.transpose() + _Qx + W_k*_P_gamma_kk_kk*W_k.transpose()
         - V_kk_k*P_gamma_kk_k*V_kk_k.transpose(); //BFE (20)
         x_kk_k = _A_k*_x_tilde + W_k*_gamma - V_kk_k*_gamma + _vec; //BFE (19)
-        _res = y - _C_k*x_kk_k; //calcolo residui (24)
+        _res = _y_kk - _C_k*x_kk_k; //calcolo residui (24)
         Kx_kk = P_x_kk_k*_C_k.transpose()*(_C_k*P_x_kk_k*_C_k.transpose() + _R).inverse(); //BFE (22)
         S_kk = _C_k*P_x_kk_k*_C_k.transpose() + _R; //calcolo residui (25)
         K_gamma_kk = P_gamma_kk_k*(H_kk_k.transpose())*(H_kk_k*P_gamma_kk_k*H_kk_k.transpose() + S_kk).inverse(); //OBE (17)
@@ -294,8 +294,8 @@ void TSKF::estimation(Eigen::Vector4d u, Eigen::MatrixXd y, Eigen::Vector4d pr_g
         _V_kk_kk = V_kk_k - Kx_kk*H_kk_k; //coupling (29)
         _P_gamma_kk_kk = (I_4 - K_gamma_kk*H_kk_k)*P_gamma_kk_k; //OBE (18)
         _P_x_kk_kk = (I_12 - Kx_kk*_C_k)*P_x_kk_k; //BFE (23)
-        _x_tilde = x_kk_k + Kx_kk*( y - _C_k*x_kk_k ); //BFE (21)
-        _gamma = gamma_pred + K_gamma_kk*( _res - H_kk_k*pr_gamma); //OBE (16)
+        _x_tilde = x_kk_k + Kx_kk*( _y_kk - _C_k*x_kk_k ); //BFE (21)
+        _gamma = gamma_pred + K_gamma_kk*( _res - H_kk_k*_gamma); //OBE (16)
 
         r.sleep();
 
@@ -306,7 +306,7 @@ void TSKF::estimation(Eigen::Vector4d u, Eigen::MatrixXd y, Eigen::Vector4d pr_g
 
 void TSKF::run() {
 
-    //boost::thread estimation_t( &TSKF::estimation, this );
+    boost::thread estimation_t( &TSKF::estimation, this );
     boost::thread publishr_test_t( &TSKF::publisher_test, this );
     ros::spin();
 }
