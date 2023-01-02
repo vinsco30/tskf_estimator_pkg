@@ -77,6 +77,9 @@ TSKF::TSKF() {
     _V_kk_kk = Eigen::Matrix<double,12,4>::Zero();
     _P_gamma_kk_kk = Eigen::Matrix<double,4,4>::Zero();
     _P_x_kk_kk = Eigen::Matrix<double,12,12>::Zero();
+    _Qx = Eigen::Matrix<double,12,12>::Zero();
+    _Qgamma = Eigen::Matrix<double,4,4>::Zero();
+    _R = Eigen::Matrix<double,6,6>::Zero();
 
     _Qgamma.diagonal() << 0.1, 0.1, 0.1, 0.1;
 
@@ -285,10 +288,15 @@ void TSKF::estimation() {
     //     }
     //     cout<<endl;
     // }
-            U << _u_k[0], 0.0, 0.0, 0.0,
-        0.0, _u_k[1], 0.0, 0.0,
-        0.0, 0.0, _u_k[2], 0.0,
-        0.0, 0.0, 0.0, _u_k[3];
+        // U << _u_k[0], 0.0, 0.0, 0.0,
+        // 0.0, _u_k[1], 0.0, 0.0,
+        // 0.0, 0.0, _u_k[2], 0.0,
+        // 0.0, 0.0, 0.0, _u_k[3];
+
+        U << 0.0, 0.0, 0.0, 0.0,
+        0.0, 0.0, 0.0, 0.0,
+        0.0, 0.0, 0.0, 0.0,
+        0.0, 0.0, 0.0, 0.0;
 
         W_k = _A_k*_V_kk_kk - _B_k*U; //coupling equation (26)
         // // //W_k =  - _B_k*U;
@@ -296,54 +304,60 @@ void TSKF::estimation() {
         gamma_pred = _gamma; //OBE (14)
         V_kk_k = W_k*_P_gamma_kk_kk*P_gamma_kk_k.inverse(); //coupling (27)
         H_kk_k = _C_k*V_kk_k; //coupling (28)
-        P_x_kk_k = _A_k*_P_x_kk_kk*_A_k.transpose() /*+ _Qx + W_k*_P_gamma_kk_kk*W_k.transpose()
-        - V_kk_k*P_gamma_kk_k*V_kk_k.transpose()*/; //BFE (20)
-        P_x_kk_k = P_x_kk_k + _Qx;
+        P_x_kk_k = _A_k*_P_x_kk_kk*_A_k.transpose()+ _Qx  + W_k*_P_gamma_kk_kk*W_k.transpose()
+        - V_kk_k*P_gamma_kk_k*V_kk_k.transpose(); //BFE (20)
+        x_kk_k = _A_k*_x_tilde + W_k*_gamma - V_kk_k*_gamma + _vec; //BFE (19)
+        _res = _y_kk - _C_k*x_kk_k; //calcolo residui (24)
+        Kx_kk = P_x_kk_k*_C_k.transpose()*(_C_k*P_x_kk_k*_C_k.transpose() + _R).inverse(); //BFE (22)
+        S_kk = _C_k*P_x_kk_k*_C_k.transpose() + _R; //calcolo residui (25)
+        K_gamma_kk = P_gamma_kk_k*(H_kk_k.transpose())*(H_kk_k*P_gamma_kk_k*H_kk_k.transpose() + S_kk).inverse();
+
+                //output stimatore
+        _V_kk_kk = V_kk_k - Kx_kk*H_kk_k; //coupling (29)
+        _P_gamma_kk_kk = (I_4 - K_gamma_kk*H_kk_k)*P_gamma_kk_k; //OBE (18)
+        _P_x_kk_kk = (I_12 - Kx_kk*_C_k)*P_x_kk_k; //BFE (23)
+        _x_tilde = x_kk_k + Kx_kk*( _y_kk - _C_k*x_kk_k ); //BFE (21)
+        _gamma = gamma_pred + K_gamma_kk*( _res - H_kk_k*_gamma); //OBE (16)
+
+        //         for ( int i=0; i<12; i++) {
+        //     for( int j=0; j<4; j++) {
+        //         cout<< _V_kk_kk(i,j)<<" , ";
+        //     }
+        //     cout<<endl;
+        // }
+
+        // for ( int i=0; i<6; i++) {
+        //     cout<<_res(i)<<endl;
+        // }   
+        // cout<<"fine"<<endl;
+
+
+    while (ros::ok() ) {
+
+        U << _u_k[0], 0.0, 0.0, 0.0,
+        0.0, _u_k[1], 0.0, 0.0,
+        0.0, 0.0, _u_k[2], 0.0,
+        0.0, 0.0, 0.0, _u_k[3];
+        W_k = _A_k*_V_kk_kk - _B_k*U; //coupling equation (26)
+        // // //W_k =  - _B_k*U;
+        P_gamma_kk_k = _P_gamma_kk_kk + _Qgamma; //optimal bias estimator (15)
+        gamma_pred = _gamma; //OBE (14)
+        V_kk_k = W_k*_P_gamma_kk_kk*P_gamma_kk_k.inverse(); //coupling (27)
+        H_kk_k = _C_k*V_kk_k; //coupling (28)
+        P_x_kk_k = _A_k*_P_x_kk_kk*_A_k.transpose() + _Qx + W_k*_P_gamma_kk_kk*W_k.transpose()
+        - V_kk_k*P_gamma_kk_k*V_kk_k.transpose(); //BFE (20)
         x_kk_k = _A_k*_x_tilde + W_k*_gamma - V_kk_k*_gamma + _vec; //BFE (19)
         _res = _y_kk - _C_k*x_kk_k; //calcolo residui (24)
         Kx_kk = P_x_kk_k*_C_k.transpose()/*(_C_k*P_x_kk_k*_C_k.transpose() + _R).inverse()*/; //BFE (22)
         S_kk = _C_k*P_x_kk_k*_C_k.transpose() + _R; //calcolo residui (25)
-        K_gamma_kk = P_gamma_kk_k*(H_kk_k.transpose())*(H_kk_k*P_gamma_kk_k*H_kk_k.transpose() + S_kk).inverse();
+        K_gamma_kk = P_gamma_kk_k*(H_kk_k.transpose())*(H_kk_k*P_gamma_kk_k*H_kk_k.transpose() + S_kk).inverse(); //OBE (17)
 
-                for ( int i=0; i<12; i++) {
-            for( int j=0; j<12; j++) {
-                cout<< P_x_kk_k(i,j)<<" , ";
-            }
-            cout<<endl;
-        }
-        cout<<"fine"<<endl;
-    while (ros::ok() ) {
-
-        // U << _u_k[0], 0.0, 0.0, 0.0,
-        // 0.0, _u_k[1], 0.0, 0.0,
-        // 0.0, 0.0, _u_k[2], 0.0,
-        // 0.0, 0.0, 0.0, _u_k[3];
-    // for ( int i=0; i<4; i++) {
-    //     for( int j=0; j<4; j++) {
-    //         cout<<U(i,j)<<" , ";
-    //     }
-    //     cout<<endl;
-    // }
-        // W_k = _A_k*_V_kk_kk - _B_k*U; //coupling equation (26)
-        // // // //W_k =  - _B_k*U;
-        // P_gamma_kk_k = _P_gamma_kk_kk + _Qgamma; //optimal bias estimator (15)
-        // gamma_pred = _gamma; //OBE (14)
-        // V_kk_k = W_k*_P_gamma_kk_kk*P_gamma_kk_k.inverse(); //coupling (27)
-        // H_kk_k = _C_k*V_kk_k; //coupling (28)
-        // P_x_kk_k = _A_k*_P_x_kk_kk*_A_k.transpose() + _Qx + W_k*_P_gamma_kk_kk*W_k.transpose()
-        // - V_kk_k*P_gamma_kk_k*V_kk_k.transpose(); //BFE (20)
-        // x_kk_k = _A_k*_x_tilde + W_k*_gamma - V_kk_k*_gamma + _vec; //BFE (19)
-        // _res = _y_kk - _C_k*x_kk_k; //calcolo residui (24)
-        // Kx_kk = P_x_kk_k*_C_k.transpose()/*(_C_k*P_x_kk_k*_C_k.transpose() + _R).inverse()*/; //BFE (22)
-        // S_kk = _C_k*P_x_kk_k*_C_k.transpose() + _R; //calcolo residui (25)
-        // K_gamma_kk = P_gamma_kk_k*(H_kk_k.transpose())*(H_kk_k*P_gamma_kk_k*H_kk_k.transpose() + S_kk).inverse(); //OBE (17)
-
-        //output stimatore
-        //_V_kk_kk = V_kk_k - Kx_kk*H_kk_k; //coupling (29)
-        //_P_gamma_kk_kk = (I_4 - K_gamma_kk*H_kk_k)*P_gamma_kk_k; //OBE (18)
-        //_P_x_kk_kk = (I_12 - Kx_kk*_C_k)*P_x_kk_k; //BFE (23)
-        // _x_tilde = x_kk_k + Kx_kk*( _y_kk - _C_k*x_kk_k ); //BFE (21)
-        // _gamma = gamma_pred + K_gamma_kk*( _res - H_kk_k*_gamma); //OBE (16)
+        // output stimatore
+        _V_kk_kk = V_kk_k - Kx_kk*H_kk_k; //coupling (29)
+        _P_gamma_kk_kk = (I_4 - K_gamma_kk*H_kk_k)*P_gamma_kk_k; //OBE (18)
+        _P_x_kk_kk = (I_12 - Kx_kk*_C_k)*P_x_kk_k; //BFE (23)
+        _x_tilde = x_kk_k + Kx_kk*( _y_kk - _C_k*x_kk_k ); //BFE (21)
+        _gamma = gamma_pred + K_gamma_kk*( _res - H_kk_k*_gamma); //OBE (16)
 
         r.sleep();
 
