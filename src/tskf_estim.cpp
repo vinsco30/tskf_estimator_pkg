@@ -128,6 +128,7 @@ TSKF::TSKF() {
     _motori = _nh.advertise<std_msgs::Float32MultiArray>("/cmd/motor_filter", 0);   
     _yy = _nh.advertise<std_msgs::Float32MultiArray>( "/y_kk", 0 );   
     _x_estim = _nh.advertise<std_msgs::Float32MultiArray>( "/estim_states", 0 );
+    _fault_estim = _nh.advertise<std_msgs::Float32MultiArray>( "/fault_estim", 0 );
 }
 
 void TSKF::odometry_cb (const nav_msgs::Odometry odometry_msg) {
@@ -171,12 +172,17 @@ void TSKF::publisher_test() {
     std_msgs::Float32MultiArray veloc;
     std_msgs::Float32MultiArray ykk;
     std_msgs::Float32MultiArray x_stim;
+    std_msgs::Float32MultiArray f_stim;
     x_stim.data.resize(12);
     veloc.data.resize( _motor_num );
     ykk.data.resize(6);
+    f_stim.data.resize(4);
 
     while( ros::ok() ) {
         
+        for( int i=0; i<4; i++ ) {
+            f_stim.data[i] = _gamma(i);
+        }
 
         for( int i=0; i<12; i++ ) {
             x_stim.data[i] = _x_tilde[i];
@@ -193,7 +199,7 @@ void TSKF::publisher_test() {
         _motori.publish( veloc );
         _yy.publish( ykk );
         _x_estim.publish( x_stim );
-
+        _fault_estim.publish( f_stim );
         r.sleep();
     }
 }
