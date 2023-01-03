@@ -5,10 +5,11 @@ Estimator based on Two Stage Kalman Filter [1]
 - Estimator function
 - Coversion of input from the Gazebo from NED to ENU)
 - Everything done only on hummingbird model
+- Tests with the estimator (it works but very slowly)
 
 ### To Do
-- Conversion of the motor velocities or modify the entry model of the linearized system
-- Complete tests
+- Improvement of the estimation (check the function and conversion from the models and the paper)
+- Implementation for the other gazebo models
 
 ## References
 <a id="1">[1]</a> 
