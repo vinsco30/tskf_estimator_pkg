@@ -59,6 +59,7 @@ class TSKF {
         ros::Publisher _yy;
         ros::Publisher _x_estim;
         ros::Publisher _fault_estim;
+        ros::Publisher _residual;
 
         //Estimator Inputs
         Eigen::Vector4d _u_k;
