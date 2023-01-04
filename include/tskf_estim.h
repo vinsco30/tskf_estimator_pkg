@@ -104,6 +104,7 @@ class TSKF {
 
         double _K = 175;
         double _Kpsi = 0.023;
+        double _L = 0.2;
         
 
 

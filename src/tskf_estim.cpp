@@ -85,7 +85,7 @@ TSKF::TSKF() {
 
     _Qx.diagonal() << 1e-6, 1e-6, 1e-6, 1e-6, 1e-6, 1e-6, 1e-12, 1e-12, 1e-12, 1e-12, 1e-12, 1e-12;
 
-    _R.diagonal() << 1e-5, 1e-5, 1e-5, 1e-10, 1e-10, 1e-10;
+    _R.diagonal() << 1e-6, 1e-6, 1e-6, 1e-12, 1e-12, 1e-12;
 
     _vec << 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
     0.0, 0.0, 0.0, 0.0;
@@ -97,18 +97,18 @@ TSKF::TSKF() {
      0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0,
      0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0;
 
-    _A_k << 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-     0, 0, 0, 0, 0, 0, _gravity, 0, 0, 0, 0, 0,
-     0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0,
-     0, 0, 0, 0, 0, 0, 0, 0, -_gravity, 0, 0, 0,
-     0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0,
-     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-     0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0,
-     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-     0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0,
-     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
-     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
-     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0;
+    _A_k << 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+     0.0, 0.0, 0.0, 0.0, 0.0, 0.0, _gravity, 0.0, 0.0, 0.0, 0.0, 0.0,
+     0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+     0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -_gravity, 0.0, 0.0, 0.0,
+     0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+     0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+     0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0,
+     0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+     0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0,
+     0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 
+     0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0,
+     0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0;
 
     // _B_k << 0.0, 0.0, 0.0, 0.0,
     // 0.0, 0.0, 0.0, 0.0,
@@ -259,11 +259,24 @@ void TSKF::tskf_matrix_generation( Eigen::MatrixXd allocation_M ) {
     I_12.diagonal() << 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
     1.0, 1.0, 1.0, 1.0, 1.0, 1.0;
     Ac = _A_k; 
+    // for ( int i=0; i<12; i++) {
+    //     for( int j=0; j<12; j++) {
+    //         cout<< _A_k(i,j)<<" , ";
+    //         }
+    //     cout<<endl;
+    //     }
+    // cout<<"fine"<<endl;
     _A_k = I_12 + Ac*_Ts; //matrice sistema linearizzato discretizzata
-
+    // for ( int i=0; i<12; i++) {
+    //     for( int j=0; j<12; j++) {
+    //         cout<< _A_k(i,j)<<" , ";
+    //         }
+    //     cout<<endl;
+    //     }
+    // cout<<"fine"<<endl;
     Eigen::Matrix<double,12,4> B;
     B = _B_k;    
-    B(5,0) = _motor_force_k/_mass; B(5,1) = _motor_force_k/_mass; B(5,2) = _motor_force_k/_mass; B(5,1) = _motor_force_k/_mass;
+    B(5,0) = _motor_force_k/_mass; B(5,1) = _motor_force_k/_mass; B(5,2) = _motor_force_k/_mass; B(5,3) = _motor_force_k/_mass;
     
     B(7,0) = -allocation_M(1,0)/_inertia(1,1); B(7,1) = -allocation_M(1,1)/_inertia(1,1);  
     B(7,2) = -allocation_M(1,2)/_inertia(1,1); B(7,3) = -allocation_M(1,3)/_inertia(1,1);
@@ -274,6 +287,25 @@ void TSKF::tskf_matrix_generation( Eigen::MatrixXd allocation_M ) {
     B(11,0) = -allocation_M(2,0)/_inertia(2,2); B(11,1) = -allocation_M(2,1)/_inertia(2,2);
     B(11,2) = -allocation_M(2,2)/_inertia(2,2); B(11,3) = -allocation_M(2,3)/_inertia(2,2);
 
+    for ( int i=0; i<12; i++ ) {
+        for ( int j=0; j<4; j++ ) {
+            cout<<B(i,j)<<" , ";
+        }
+        cout<<endl;
+    }
+    cout<<"fine"<<endl;
+
+    // B(7,0) = _motor_force_k*_L/_inertia(0,0); B(7,1) = -_motor_force_k*_L/_inertia(0,0);
+    // B(9,2) = _motor_force_k*_L/_inertia(1,1); B(9,3) = -_motor_force_k*_L/_inertia(1,1);
+    // B(11,0) = _motor_force_k*_motor_moment_k/_inertia(2,2); B(11,1) = _motor_force_k*_motor_moment_k/_inertia(2,2);
+    // B(11,2) = -_motor_force_k*_motor_moment_k/_inertia(2,2); B(11,3) = -_motor_force_k*_motor_moment_k/_inertia(2,2);
+    // for ( int i=0; i<12; i++ ) {
+    //     for ( int j=0; j<4; j++ ) {
+    //         cout<<B(i,j)<<" , ";
+    //     }
+    //     cout<<endl;
+    // }
+    // cout<<"fine"<<endl;
     _B_k = B*_Ts;
 
     
