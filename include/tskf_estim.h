@@ -99,7 +99,7 @@ class TSKF {
         //Matrice cambio riferimento
         Eigen::Matrix3d _Rx = utilities::rotx(3.14);
 
-        double _Ts = 0.01;
+        double _Ts = 0.0001;
         double _par = 4.8849e-08;
 
         double _K = 175;

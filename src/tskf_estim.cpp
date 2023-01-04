@@ -67,7 +67,7 @@ TSKF::TSKF() {
     _x_hat << 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
         0.0, 0.0, 0.0, 0.0, 0.0, 0.0;
       
-    _x_tilde << 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+    _x_tilde << 0.0, 0.0, 0.0, 0.0, 0.719, 0.0,
         0.0, 0.0, 0.0, 0.0, 0.0, 0.0;
 
     _gamma << 0.0, 0.0, 0.0, 0.0;
@@ -176,14 +176,14 @@ void TSKF::mot_vel_cb (const std_msgs::Float32MultiArray mot_vel) {
 }
 
 void TSKF::change_u ( Eigen::Vector4d motor_vel ) {
-    _u_k << motor_vel[0], motor_vel[1], motor_vel[2], motor_vel[3];
+    _u_k << motor_vel[1], motor_vel[3], motor_vel[0], motor_vel[2]; //potrei provare a cambiare l'ordine dei motori!!!
     //_u_k = _u_k*_par;
 }
 
 
 void TSKF::publisher_test() {
 
-    ros::Rate r(100);
+    ros::Rate r(10000);
     std_msgs::Float32MultiArray veloc;
     std_msgs::Float32MultiArray ykk;
     std_msgs::Float32MultiArray x_stim;
@@ -313,7 +313,7 @@ void TSKF::tskf_matrix_generation( Eigen::MatrixXd allocation_M ) {
 
 void TSKF::estimation() {
     
-    ros::Rate r( 100 );
+    ros::Rate r( 10000 );
 
 
     //Variabili del tskf usate solo in estimation
