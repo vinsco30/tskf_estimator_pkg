@@ -2,7 +2,8 @@
 
 <launch>
 	<rosparam command="load" file="$(find lee_controller)/conf/humm_param.yaml" />
-	<node pkg="tskf_estimator" name="tskf_estimator" type="tskf_estimator" output="screen">
-	</node>
+	<node pkg="tskf_estimator" name="tskf_estimator" type="tskf_estimator" output="screen"/>
+	<node name = "PlotJuggler" pkg = "plotjuggler" type = "plotjuggler" output = "screen" args = "--layout $(find tskf_estimator)/conf/layout_fault.xml" />
+	
 
 </launch>
