@@ -41,9 +41,9 @@ void TSKF::load_parameters() {
         _motor_moment_k = 1.6e-2;
     }
 
-    // if( !_nh.getParam("mass", _mass) ) {
-    //     _mass =  1.5;
-    // }
+    if( !_nh.getParam("mass", _mass) ) {
+        _mass =  1.5;
+    }
 
     if( !_nh.getParam("gravity", _gravity) ) {
         _gravity =  9.81;
@@ -87,6 +87,8 @@ TSKF::TSKF() {
 
     _R.diagonal() << 1e-6, 1e-6, 1e-6, 1e-12, 1e-12, 1e-12;
 
+    // _vec << 0.0, 0.0, 0.0, 0.0, 0.0, -_gravity*_Ts, 0.0, 0.0,
+    // 0.0, 0.0, 0.0, 0.0;
     _vec << 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
     0.0, 0.0, 0.0, 0.0;
 
@@ -177,7 +179,7 @@ void TSKF::mot_vel_cb (const std_msgs::Float32MultiArray mot_vel) {
 
 void TSKF::change_u ( Eigen::Vector4d motor_vel ) {
     _u_k << motor_vel[0], motor_vel[1], motor_vel[2], motor_vel[3];
-    // _u_k = _u_k*_motor_force_k*_motor_moment_k;
+    _u_k = _u_k/_par;
 }
 
 
@@ -277,6 +279,7 @@ void TSKF::tskf_matrix_generation( Eigen::MatrixXd allocation_M ) {
     Eigen::Matrix<double,12,4> B;
     B = _B_k;    
     B(5,0) = _motor_force_k/_mass; B(5,1) = _motor_force_k/_mass; B(5,2) = _motor_force_k/_mass; B(5,3) = _motor_force_k/_mass;
+    // B(5,0) = (_motor_force_k/_mass)*1/_par; B(5,1) = (_motor_force_k/_mass)*1/_par; B(5,2) = (_motor_force_k/_mass)*1/_par; B(5,3) = (_motor_force_k/_mass)*1/_par;
     
     B(7,0) = -allocation_M(1,0)/_inertia(1,1); B(7,1) = -allocation_M(1,1)/_inertia(1,1);  
     B(7,2) = -allocation_M(1,2)/_inertia(1,1); B(7,3) = -allocation_M(1,3)/_inertia(1,1);
@@ -313,7 +316,7 @@ void TSKF::tskf_matrix_generation( Eigen::MatrixXd allocation_M ) {
 
 void TSKF::estimation() {
     
-    ros::Rate r( 10000 );
+    ros::Rate r( 100 );
 
 
     //Variabili del tskf usate solo in estimation
@@ -363,7 +366,7 @@ void TSKF::estimation() {
         H_kk_k = _C_k*V_kk_k; //coupling (28)
         P_x_kk_k = _A_k*_P_x_kk_kk*_A_k.transpose()+ _Qx  + W_k*_P_gamma_kk_kk*W_k.transpose()
         - V_kk_k*P_gamma_kk_k*V_kk_k.transpose(); //BFE (20)
-        x_kk_k = _A_k*_x_tilde + _B_k*_u_k + W_k*_gamma - V_kk_k*_gamma /*+ _vec*/; //BFE (19)
+        x_kk_k = _A_k*_x_tilde + _B_k*_u_k + W_k*_gamma - V_kk_k*_gamma + _vec; //BFE (19)
         _res = _y_kk - _C_k*x_kk_k; //calcolo residui (24)
         Kx_kk = P_x_kk_k*_C_k.transpose()*(_C_k*P_x_kk_k*_C_k.transpose() + _R).inverse(); //BFE (22)
         S_kk = _C_k*P_x_kk_k*_C_k.transpose() + _R; //calcolo residui (25)
@@ -400,7 +403,7 @@ void TSKF::estimation() {
         H_kk_k = _C_k*V_kk_k; //coupling (28) OK
         P_x_kk_k = _A_k*_P_x_kk_kk*(_A_k.transpose()) + _Qx + W_k*_P_gamma_kk_kk*(W_k.transpose())
         - V_kk_k*P_gamma_kk_k*(V_kk_k.transpose()); //BFE (20) OK
-        x_kk_k = _A_k*_x_tilde + _B_k*_u_k + W_k*_gamma - V_kk_k*_gamma; //BFE (19) OK
+        x_kk_k = _A_k*_x_tilde + _B_k*_u_k + W_k*_gamma - V_kk_k*_gamma + _vec; //BFE (19) OK
         _res = _y_kk - _C_k*x_kk_k; //calcolo residui (24) OK
         Kx_kk = P_x_kk_k*(_C_k.transpose())*((_C_k*P_x_kk_k*(_C_k.transpose()) + _R).inverse()); //BFE (22)
         S_kk = _C_k*P_x_kk_k*(_C_k.transpose()) + _R; //calcolo residui (25) OK
