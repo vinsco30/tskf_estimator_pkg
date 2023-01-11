@@ -41,9 +41,9 @@ void TSKF::load_parameters() {
         _motor_moment_k = 1.6e-2;
     }
 
-    if( !_nh.getParam("mass", _mass) ) {
-        _mass =  1.5;
-    }
+    // if( !_nh.getParam("mass", _mass) ) {
+    //     _mass =  1.5;
+    // }
 
     if( !_nh.getParam("gravity", _gravity) ) {
         _gravity =  9.81;
@@ -67,7 +67,7 @@ TSKF::TSKF() {
     _x_hat << 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
         0.0, 0.0, 0.0, 0.0, 0.0, 0.0;
       
-    _x_tilde << 0.0, 0.0, 0.0, 0.0, 0.719, 0.0,
+    _x_tilde << 0.0, 0.0, 0.0, 0.0, 3.0, 0.0,
         0.0, 0.0, 0.0, 0.0, 0.0, 0.0;
 
     _gamma << 0.0, 0.0, 0.0, 0.0;
@@ -158,8 +158,8 @@ void TSKF::odometry_cb (const nav_msgs::Odometry odometry_msg) {
 }
 
 void TSKF::change_y( Eigen::Vector3d p, Eigen::Vector3d w ) { //corretto
-    Eigen::Vector3d p_new;
-    Eigen::Vector3d w_new;
+    Eigen::Vector3d p_new = Eigen::Matrix<double,3,1>::Zero();
+    Eigen::Vector3d w_new = Eigen::Matrix<double,3,1>::Zero();
 
     p_new = _Rx*p;
     w_new = _Rx*w;
@@ -176,14 +176,14 @@ void TSKF::mot_vel_cb (const std_msgs::Float32MultiArray mot_vel) {
 }
 
 void TSKF::change_u ( Eigen::Vector4d motor_vel ) {
-    _u_k << motor_vel[1], motor_vel[3], motor_vel[0], motor_vel[2]; //potrei provare a cambiare l'ordine dei motori!!!
-    //_u_k = _u_k*_par;
+    _u_k << motor_vel[0], motor_vel[1], motor_vel[2], motor_vel[3];
+    // _u_k = _u_k*_motor_force_k*_motor_moment_k;
 }
 
 
 void TSKF::publisher_test() {
 
-    ros::Rate r(10000);
+    ros::Rate r(100);
     std_msgs::Float32MultiArray veloc;
     std_msgs::Float32MultiArray ykk;
     std_msgs::Float32MultiArray x_stim;
@@ -354,11 +354,7 @@ void TSKF::estimation() {
         // 0.0, 0.0, _u_k[2], 0.0,
         // 0.0, 0.0, 0.0, _u_k[3];
 
-        U << 0.0, 0.0, 0.0, 0.0,
-        0.0, 0.0, 0.0, 0.0,
-        0.0, 0.0, 0.0, 0.0,
-        0.0, 0.0, 0.0, 0.0;
-
+        U.diagonal() << _u_k[0], _u_k[1], _u_k[2], _u_k[3];
         W_k = _A_k*_V_kk_kk - _B_k*U; //coupling equation (26)
         // // //W_k =  - _B_k*U;
         P_gamma_kk_k = _P_gamma_kk_kk + _Qgamma; //optimal bias estimator (15)
@@ -367,13 +363,13 @@ void TSKF::estimation() {
         H_kk_k = _C_k*V_kk_k; //coupling (28)
         P_x_kk_k = _A_k*_P_x_kk_kk*_A_k.transpose()+ _Qx  + W_k*_P_gamma_kk_kk*W_k.transpose()
         - V_kk_k*P_gamma_kk_k*V_kk_k.transpose(); //BFE (20)
-        x_kk_k = _A_k*_x_tilde + _B_k*_u_k + W_k*_gamma - V_kk_k*_gamma + _vec; //BFE (19)
+        x_kk_k = _A_k*_x_tilde + _B_k*_u_k + W_k*_gamma - V_kk_k*_gamma /*+ _vec*/; //BFE (19)
         _res = _y_kk - _C_k*x_kk_k; //calcolo residui (24)
         Kx_kk = P_x_kk_k*_C_k.transpose()*(_C_k*P_x_kk_k*_C_k.transpose() + _R).inverse(); //BFE (22)
         S_kk = _C_k*P_x_kk_k*_C_k.transpose() + _R; //calcolo residui (25)
         K_gamma_kk = P_gamma_kk_k*(H_kk_k.transpose())*(H_kk_k*P_gamma_kk_k*H_kk_k.transpose() + S_kk).inverse();
 
-                //output stimatore
+        //output stimatore
         _V_kk_kk = V_kk_k - Kx_kk*H_kk_k; //coupling (29)
         _P_gamma_kk_kk = (I_4 - K_gamma_kk*H_kk_k)*P_gamma_kk_k; //OBE (18)
         _P_x_kk_kk = (I_12 - Kx_kk*_C_k)*P_x_kk_k; //BFE (23)
@@ -394,21 +390,21 @@ void TSKF::estimation() {
 
 
     while (ros::ok() ) {
-
+        //forse bisogna discretizzare le matrici Q e R??
         U.diagonal() << _u_k[0], _u_k[1], _u_k[2], _u_k[3];
-        W_k = _A_k*_V_kk_kk - _B_k*U; //coupling equation (26)
+        W_k = _A_k*_V_kk_kk - _B_k*U; //coupling equation (26) OK
         // // //W_k =  - _B_k*U;
-        P_gamma_kk_k = _P_gamma_kk_kk + _Qgamma; //optimal bias estimator (15)
-        gamma_pred = _gamma; //OBE (14)
-        V_kk_k = W_k*_P_gamma_kk_kk*P_gamma_kk_k.inverse(); //coupling (27)
-        H_kk_k = _C_k*V_kk_k; //coupling (28)
-        P_x_kk_k = _A_k*_P_x_kk_kk*_A_k.transpose() + _Qx + W_k*_P_gamma_kk_kk*W_k.transpose()
-        - V_kk_k*P_gamma_kk_k*V_kk_k.transpose(); //BFE (20)
-        x_kk_k = _A_k*_x_tilde + _B_k*_u_k + W_k*_gamma - V_kk_k*_gamma + _vec; //BFE (19)
-        _res = _y_kk - _C_k*x_kk_k; //calcolo residui (24)
-        Kx_kk = P_x_kk_k*_C_k.transpose()/*(_C_k*P_x_kk_k*_C_k.transpose() + _R).inverse()*/; //BFE (22)
-        S_kk = _C_k*P_x_kk_k*_C_k.transpose() + _R; //calcolo residui (25)
-        K_gamma_kk = P_gamma_kk_k*(H_kk_k.transpose())*(H_kk_k*P_gamma_kk_k*H_kk_k.transpose() + S_kk).inverse(); //OBE (17)
+        P_gamma_kk_k = _P_gamma_kk_kk + _Qgamma; //optimal bias estimator (15) OK
+        gamma_pred = _gamma; //OBE (14) OK
+        V_kk_k = W_k*_P_gamma_kk_kk*(P_gamma_kk_k.inverse()); //coupling (27) OK
+        H_kk_k = _C_k*V_kk_k; //coupling (28) OK
+        P_x_kk_k = _A_k*_P_x_kk_kk*(_A_k.transpose()) + _Qx + W_k*_P_gamma_kk_kk*(W_k.transpose())
+        - V_kk_k*P_gamma_kk_k*(V_kk_k.transpose()); //BFE (20) OK
+        x_kk_k = _A_k*_x_tilde + _B_k*_u_k + W_k*_gamma - V_kk_k*_gamma; //BFE (19) OK
+        _res = _y_kk - _C_k*x_kk_k; //calcolo residui (24) OK
+        Kx_kk = P_x_kk_k*(_C_k.transpose())*((_C_k*P_x_kk_k*(_C_k.transpose()) + _R).inverse()); //BFE (22)
+        S_kk = _C_k*P_x_kk_k*(_C_k.transpose()) + _R; //calcolo residui (25) OK
+        K_gamma_kk = P_gamma_kk_k*(H_kk_k.transpose())*((H_kk_k*P_gamma_kk_k*(H_kk_k.transpose()) + S_kk).inverse()); //OBE (17) OK
 
         // output stimatore
         _V_kk_kk = V_kk_k - Kx_kk*H_kk_k; //coupling (29)

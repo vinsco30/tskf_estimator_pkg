@@ -1,53 +1,68 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <root>
  <tabbed_widget parent="main_window" name="Main Window">
-  <Tab tab_name="tab1" containers="1">
+  <Tab containers="1" tab_name="tab1">
    <Container>
-    <DockSplitter orientation="-" sizes="0.501126;0.498874" count="2">
-     <DockSplitter orientation="|" sizes="0.500656;0.499344" count="2">
+    <DockSplitter count="2" orientation="-" sizes="0.5;0.5">
+     <DockSplitter count="2" orientation="|" sizes="0.502625;0.497375">
       <DockArea name="Estimated States">
-       <plot flip_x="false" style="Lines" flip_y="false" mode="TimeSeries">
-        <range right="91.428000" bottom="-0.018203" left="86.437000" top="0.746878"/>
+       <plot flip_y="false" mode="TimeSeries" style="Lines" flip_x="false">
+        <range top="3.079522" right="386.694000" bottom="-0.075255" left="381.689000"/>
         <limitY/>
-        <curve color="#1f77b4" name="/estim_states/data.0"/>
-        <curve color="#d62728" name="/estim_states/data.2"/>
-        <curve color="#1ac938" name="/estim_states/data.4"/>
+        <curve name="/estim_states/data.0" color="#1f77b4"/>
+        <curve name="/estim_states/data.2" color="#d62728"/>
+        <curve name="/estim_states/data.4" color="#1ac938"/>
+        <curve name="/estim_states/data.11" color="#1f77b4"/>
+        <curve name="/estim_states/data.7" color="#d62728"/>
+        <curve name="/estim_states/data.9" color="#1ac938"/>
        </plot>
       </DockArea>
       <DockArea name="Input TSKF">
-       <plot flip_x="false" style="Lines" flip_y="false" mode="TimeSeries">
-        <range right="91.428000" bottom="-0.018340" left="86.437000" top="0.737292"/>
+       <plot flip_y="false" mode="TimeSeries" style="Lines" flip_x="false">
+        <range top="3.079424" right="386.694000" bottom="-0.075516" left="381.689000"/>
         <limitY/>
-        <curve color="#9467bd" name="/y_kk/data.0"/>
-        <curve color="#17becf" name="/y_kk/data.1"/>
-        <curve color="#bcbd22" name="/y_kk/data.2"/>
-        <curve color="#1f77b4" name="/y_kk/data.3"/>
-        <curve color="#d62728" name="/y_kk/data.4"/>
-        <curve color="#1ac938" name="/y_kk/data.5"/>
+        <curve name="/y_kk/data.0" color="#9467bd"/>
+        <curve name="/y_kk/data.1" color="#17becf"/>
+        <curve name="/y_kk/data.2" color="#bcbd22"/>
+        <curve name="/y_kk/data.3" color="#1f77b4"/>
+        <curve name="/y_kk/data.4" color="#d62728"/>
+        <curve name="/y_kk/data.5" color="#1ac938"/>
        </plot>
       </DockArea>
      </DockSplitter>
-     <DockSplitter orientation="|" sizes="0.502625;0.497375" count="2">
-      <DockArea name="Fault signal">
-       <plot flip_x="false" style="Lines" flip_y="false" mode="TimeSeries">
-        <range right="91.428000" bottom="0.575875" left="86.437000" top="1.606650"/>
-        <limitY/>
-        <curve color="#ff7f0e" name="/fault_estim/data.0"/>
-        <curve color="#f14cc1" name="/fault_estim/data.1"/>
-        <curve color="#9467bd" name="/fault_estim/data.2"/>
-        <curve color="#17becf" name="/fault_estim/data.3"/>
-       </plot>
-      </DockArea>
+     <DockSplitter count="2" orientation="|" sizes="0.5;0.5">
+      <DockSplitter count="2" orientation="-" sizes="0.501129;0.498871">
+       <DockArea name="Fault signal">
+        <plot flip_y="false" mode="TimeSeries" style="Lines" flip_x="false">
+         <range top="1.334963" right="386.694000" bottom="0.603077" left="381.689000"/>
+         <limitY/>
+         <curve name="/fault_estim/data.0" color="#ff7f0e"/>
+         <curve name="/fault_estim/data.1" color="#f14cc1"/>
+         <curve name="/fault_estim/data.2" color="#9467bd"/>
+         <curve name="/fault_estim/data.3" color="#17becf"/>
+        </plot>
+       </DockArea>
+       <DockArea name="Motor Velocities">
+        <plot flip_y="false" mode="TimeSeries" style="Lines" flip_x="false">
+         <range top="1006.749747" right="386.694000" bottom="1006.601450" left="381.689000"/>
+         <limitY/>
+         <curve name="/hummingbird/cmd/motor_vel/data.0" color="#1f77b4"/>
+         <curve name="/hummingbird/cmd/motor_vel/data.1" color="#d62728"/>
+         <curve name="/hummingbird/cmd/motor_vel/data.2" color="#1ac938"/>
+         <curve name="/hummingbird/cmd/motor_vel/data.3" color="#ff7f0e"/>
+        </plot>
+       </DockArea>
+      </DockSplitter>
       <DockArea name="Residuals">
-       <plot flip_x="false" style="Lines" flip_y="false" mode="TimeSeries">
-        <range right="91.428000" bottom="-0.009638" left="86.437000" top="0.000594"/>
+       <plot flip_y="false" mode="TimeSeries" style="Lines" flip_x="false">
+        <range top="0.000441" right="386.694000" bottom="-0.000449" left="381.689000"/>
         <limitY/>
-        <curve color="#bcbd22" name="/res/data.0"/>
-        <curve color="#1f77b4" name="/res/data.1"/>
-        <curve color="#d62728" name="/res/data.2"/>
-        <curve color="#1ac938" name="/res/data.3"/>
-        <curve color="#ff7f0e" name="/res/data.4"/>
-        <curve color="#f14cc1" name="/res/data.5"/>
+        <curve name="/res/data.0" color="#bcbd22"/>
+        <curve name="/res/data.1" color="#1f77b4"/>
+        <curve name="/res/data.2" color="#d62728"/>
+        <curve name="/res/data.3" color="#1ac938"/>
+        <curve name="/res/data.4" color="#ff7f0e"/>
+        <curve name="/res/data.5" color="#f14cc1"/>
        </plot>
       </DockArea>
      </DockSplitter>

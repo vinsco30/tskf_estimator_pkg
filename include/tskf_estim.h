@@ -49,7 +49,7 @@ class TSKF {
         int _motor_num;
         double _motor_force_k;
         double _motor_moment_k;
-        double _mass;
+        double _mass = 0.001;
         double _gravity;
         Eigen::Matrix3d _inertia;
         vector<double> _rotor_angles;
