@@ -57,12 +57,17 @@ void TSKF::load_parameters() {
         _rotor_angles[3] = -2.565;
     }
 
+    if( !_nh.getParam("estimation_rate", _estim_rate) ) {
+        _estim_rate =  100;
+    }
+
 }
 
 TSKF::TSKF() {
 
     load_parameters();
-
+    _Ts = 1/_estim_rate;
+    _par = _motor_force_k/_K;
     //Initialization vectors and matrices
     _x_hat << 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
         0.0, 0.0, 0.0, 0.0, 0.0, 0.0;
@@ -178,14 +183,14 @@ void TSKF::mot_vel_cb (const std_msgs::Float32MultiArray mot_vel) {
 }
 
 void TSKF::change_u ( Eigen::Vector4d motor_vel ) {
-    _u_k << motor_vel[0], motor_vel[1], motor_vel[2], motor_vel[3];
-    _u_k = _u_k/_par;
+    _u_k << motor_vel[0]/_par, motor_vel[1]/_par, motor_vel[2]/_par, motor_vel[3]/_par;
+    //_u_k = _u_k/_par;
 }
 
 
 void TSKF::publisher_test() {
 
-    ros::Rate r(100);
+    ros::Rate r( _estim_rate );
     std_msgs::Float32MultiArray veloc;
     std_msgs::Float32MultiArray ykk;
     std_msgs::Float32MultiArray x_stim;
@@ -290,13 +295,13 @@ void TSKF::tskf_matrix_generation( Eigen::MatrixXd allocation_M ) {
     B(11,0) = -allocation_M(2,0)/_inertia(2,2); B(11,1) = -allocation_M(2,1)/_inertia(2,2);
     B(11,2) = -allocation_M(2,2)/_inertia(2,2); B(11,3) = -allocation_M(2,3)/_inertia(2,2);
 
-    for ( int i=0; i<12; i++ ) {
-        for ( int j=0; j<4; j++ ) {
-            cout<<B(i,j)<<" , ";
-        }
-        cout<<endl;
-    }
-    cout<<"fine"<<endl;
+    // for ( int i=0; i<12; i++ ) {
+    //     for ( int j=0; j<4; j++ ) {
+    //         cout<<B(i,j)<<" , ";
+    //     }
+    //     cout<<endl;
+    // }
+    // cout<<"fine"<<endl;
 
     // B(7,0) = _motor_force_k*_L/_inertia(0,0); B(7,1) = -_motor_force_k*_L/_inertia(0,0);
     // B(9,2) = _motor_force_k*_L/_inertia(1,1); B(9,3) = -_motor_force_k*_L/_inertia(1,1);
@@ -316,7 +321,7 @@ void TSKF::tskf_matrix_generation( Eigen::MatrixXd allocation_M ) {
 
 void TSKF::estimation() {
     
-    ros::Rate r( 100 );
+    ros::Rate r( _estim_rate );
 
 
     //Variabili del tskf usate solo in estimation
