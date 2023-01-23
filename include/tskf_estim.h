@@ -33,6 +33,7 @@ class TSKF {
                                     double moment_k,
                                     vector<int> direction );
         void tskf_matrix_generation( Eigen::MatrixXd allocation_matrix); 
+        void pwm_computation(const Eigen::MatrixXd allocation_M);
         void load_parameters();
         void run();
 
@@ -95,6 +96,10 @@ class TSKF {
         Eigen::Matrix<double,12,12> _Qx;
         Eigen::Matrix<double,4,4> _Qgamma;
         Eigen::Matrix<double,6,6> _R;
+        
+        Eigen::Matrix<double,4,4> _Ap_inv; //allocation matrix from the paper
+        Eigen::Vector4d _u_p;
+
 
         //Matrice cambio riferimento
         Eigen::Matrix3d _Rx = utilities::rotx(3.14);
@@ -103,7 +108,7 @@ class TSKF {
         double _Ts;
         double _par;
 
-        double _K = 175;
+        double _K = 175.0;
         double _Kpsi = 0.023;
         double _L = 0.2;
         
