@@ -67,9 +67,7 @@ TSKF::TSKF() {
 
     load_parameters();
     _Ts = 1/_estim_rate;
-    _par = (_motor_force_k/_K);
-    // _par = _motor_force_k;
-    // _par = _K/_motor_force_k;
+
     //Initialization vectors and matrices
     _x_hat << 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
         0.0, 0.0, 0.0, 0.0, 0.0, 0.0;
@@ -96,7 +94,7 @@ TSKF::TSKF() {
 
     // _vec << 0.0, 0.0, 0.0, 0.0, 0.0, -_gravity*_Ts, 0.0, 0.0,
     // 0.0, 0.0, 0.0, 0.0;
-    _vec << 0.0, 0.0, 0.0, 0.0, 0.0, -_gravity*_Ts, 0.0, 0.0,
+    _vec << 0.0, 0.0, 0.0, 0.0, 0.0, _gravity*_Ts, 0.0, 0.0,
     0.0, 0.0, 0.0, 0.0;
 
     _C_k << 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
@@ -106,35 +104,31 @@ TSKF::TSKF() {
      0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0,
      0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0;
 
-    _A_k << 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-     0.0, 0.0, 0.0, 0.0, 0.0, 0.0, _gravity, 0.0, 0.0, 0.0, 0.0, 0.0,
-     0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-     0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -_gravity, 0.0, 0.0, 0.0,
-     0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-     0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-     0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0,
-     0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-     0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0,
-     0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 
-     0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0,
-     0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0;
+    _A_k << 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, //x
+     0.0, 0.0, 0.0, 0.0, 0.0, 0.0, _gravity, 0.0, 0.0, 0.0, 0.0, 0.0, //x_dot
+     0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, //y
+     0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -_gravity, 0.0, 0.0, 0.0, //y_dot
+     0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, //z
+     0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, //z_dot
+     0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, //roll
+     0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, //roll_dot
+     0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, //pitch
+     0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, //pitch_dot
+     0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, //psi
+     0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0; //psi_dot
 
 
     _B_k = Eigen::Matrix<double,12,4>::Zero();
 
     Eigen::Matrix<double,4,4> A_p;
-    A_p << _K*_arm_length[0], -_K*_arm_length[1], 0.0, 0.0,
-            0.0, 0.0, _K*_arm_length[2], -_K*_arm_length[3],
-            _K*_Kpsi, _K*_Kpsi, -_K*_Kpsi, -_K*_Kpsi,
-            _K, _K, _K, _K;
 
-    for(int i=0; i<4; i++) {
-        for(int j=0; j<4; j++) {
-            cout<<A_p(i,j)<< " ";
-        }
-        cout<<endl;
+
+    for( int k=0; k<_motor_num; k++ ) {
+        A_p(0, k) = sin( _rotor_angles[k] ) * _arm_length[k] * _K;
+        A_p(1, k) = cos( _rotor_angles[k] ) * _arm_length[k] * _K;
+        A_p(2, k) = _motor_rotation_direction[k] * _K * _Kpsi;
+        A_p(3, k) = -_K;
     }
-    cout<<"fine"<<endl;
 
     _Ap_inv = A_p.inverse();
     _u_p << 0.0, 0.0, 0.0, 0.0;
@@ -143,7 +137,7 @@ TSKF::TSKF() {
     
     
     _odom_sub = _nh.subscribe(_model_name + "/odometry", 0, &TSKF::odometry_cb, this); 
-    _mot_vel_sub = _nh.subscribe < std_msgs::Float32MultiArray > (_model_name + "/cmd/motor_vel", 0, &TSKF::mot_vel_cb, this);
+    _mot_vel_sub = _nh.subscribe < std_msgs::Float32MultiArray > (/*_model_name + "/cmd/motor_vel"*/"/rotor_pwm", 0, &TSKF::mot_vel_cb, this);
     _motori = _nh.advertise<std_msgs::Float32MultiArray>("/cmd/motor_filter", 0);   
     _yy = _nh.advertise<std_msgs::Float32MultiArray>( "/y_kk", 0 );   
     _x_estim = _nh.advertise<std_msgs::Float32MultiArray>( "/estim_states", 0 );
@@ -169,29 +163,30 @@ void TSKF::change_y( Eigen::Vector3d p, Eigen::Vector3d w ) { //corretto
     p_new = _Rx*p;
     w_new = _Rx*w;
 
-    _y_kk << p_new[0], p_new[1], p_new[2], w_new[1], w_new[0], w_new[2];
+    _y_kk << p_new[0], p_new[1], p_new[2], w_new[0], w_new[1], w_new[2]; //cambiare!!
 }
 
 void TSKF::mot_vel_cb (const std_msgs::Float32MultiArray mot_vel) {
     _mot = mot_vel;
     Eigen::Vector4d motor_vel;
 
-    motor_vel << _mot.data[0], _mot.data[1], _mot.data[2], _mot.data[3];
-    change_u( motor_vel );
+    _u_k << _mot.data[0], _mot.data[1], _mot.data[2], _mot.data[3];
+    // _u_k << motor_vel[0], motor_vel[1], motor_vel[2], motor_vel[3];
+  
 }
 
-void TSKF::change_u ( Eigen::Vector4d motor_vel ) {
-    // _u_k << motor_vel[0]/_par, motor_vel[1]/_par, motor_vel[2]/_par, motor_vel[3]/_par;
-    _u_k << motor_vel[0], motor_vel[1], motor_vel[2], motor_vel[3];
-    // _u_k << motor_vel[0]*_par, motor_vel[1]*_par, motor_vel[2]*_par, motor_vel[3]*_par;
+// void TSKF::change_u ( Eigen::Vector4d motor_vel ) {
+//     // _u_k << motor_vel[0]/_par, motor_vel[1]/_par, motor_vel[2]/_par, motor_vel[3]/_par;
+//     _u_k << motor_vel[0], motor_vel[1], motor_vel[2], motor_vel[3];
+//     // _u_k << motor_vel[0]*_par, motor_vel[1]*_par, motor_vel[2]*_par, motor_vel[3]*_par;
 
-}
+// }
 
-void TSKF::pwm_computation(const Eigen::MatrixXd allocation_M) {
-    Eigen::Vector4d u;
-    u << _u_k[0]*_u_k[0], _u_k[1]*_u_k[1], _u_k[2]*_u_k[2], _u_k[3]*_u_k[3];
-    _u_p = _Ap_inv*allocation_M*u;
-}
+// void TSKF::pwm_computation(const Eigen::MatrixXd allocation_M) {
+//     Eigen::Vector4d u;
+//     u << _u_k[0]*_u_k[0], _u_k[1]*_u_k[1], _u_k[2]*_u_k[2], _u_k[3]*_u_k[3];
+//     _u_p = /*_Ap_inv*allocation_M**/u;
+// }
 
 
 void TSKF::publisher_test() {
@@ -219,7 +214,7 @@ void TSKF::publisher_test() {
         }
 
         for( int i=0; i<_motor_num; i++ ) {
-            veloc.data[i] = _u_p(i);
+            veloc.data[i] = _u_k(i);
         }
 
         for( int i=0; i<6; i++ ) {
@@ -255,12 +250,6 @@ bool TSKF::generate_allocation_matrix(Eigen::MatrixXd & allocation_M,
         allocation_M(2, i) = direction[i] * force_k * moment_k;
         allocation_M(3, i) = -force_k;
     }
-    for(int i=0; i<4; i++) {
-        for(int j=0; j<4; j++) {
-            cout<<allocation_M(i,j)<< " ";
-        }
-        cout<<endl;
-    }
     cout<<"fine"<<endl;
     Eigen::FullPivLU<Eigen::Matrix4Xd> lu( allocation_M);
     if ( lu.rank() < 4 ) {
@@ -283,24 +272,30 @@ void TSKF::tskf_matrix_generation( Eigen::MatrixXd allocation_M ) {
 
     Eigen::Matrix<double,12,4> B;
     B = _B_k;    
-    // B(5,0) = _motor_force_k/_mass; B(5,1) = _motor_force_k/_mass; B(5,2) = _motor_force_k/_mass; B(5,3) = _motor_force_k/_mass;
-    // // // B(5,0) = (_motor_force_k/_mass)*1/_par; B(5,1) = (_motor_force_k/_mass)*1/_par; B(5,2) = (_motor_force_k/_mass)*1/_par; B(5,3) = (_motor_force_k/_mass)*1/_par;
-    
-    // B(7,0) = -allocation_M(1,0)/_inertia(1,1); B(7,1) = -allocation_M(1,1)/_inertia(1,1);  
-    // B(7,2) = -allocation_M(1,2)/_inertia(1,1); B(7,3) = -allocation_M(1,3)/_inertia(1,1);
-    
-    // B(9,0) = allocation_M(0,0)/_inertia(0,0); B(9,1) = allocation_M(0,1)/_inertia(0,0); 
-    // B(9,2) = allocation_M(0,2)/_inertia(0,0); B(9,3) = allocation_M(0,3)/_inertia(0,0);
-    
-    // B(11,0) = -allocation_M(2,0)/_inertia(2,2); B(11,1) = -allocation_M(2,1)/_inertia(2,2);
-    // B(11,2) = -allocation_M(2,2)/_inertia(2,2); B(11,3) = -allocation_M(2,3)/_inertia(2,2);
 
-    // Matrice B uguale a quella del paper
-    B(5,0) = _K/_mass; B(5,1) = _K/_mass; B(5,2) = _K/_mass; B(5,3) = _K/_mass;
-    B(7,0) = _K*_L/_inertia(0,0); B(7,1) = -_K*_L/_inertia(0,0);
-    B(9,2) = _K*_L/_inertia(1,1); B(9,3) = -_K*_L/_inertia(1,1);
-    B(11,0) = _K*_Kpsi/_inertia(2,2); B(11,1) = _K*_Kpsi/_inertia(2,2);
-    B(11,2) = -_K*_Kpsi/_inertia(2,2); B(11,3) = -_K*_Kpsi/_inertia(2,2);
+    Eigen::Matrix<double,4,4> A_p;
+
+    for( int k=0; k<_motor_num; k++ ) {
+        A_p(0, k) = sin( _rotor_angles[k] ) * _arm_length[k] * _K;
+        A_p(1, k) = cos( _rotor_angles[k] ) * _arm_length[k] * _K;
+        A_p(2, k) = _motor_rotation_direction[k] * _K * _Kpsi;
+        A_p(3, k) = -_K;
+    }
+
+    for( int i=0; i<4; i++ ) {
+        for( int j=0; j<4; j++ ) {
+            cout<<A_p(i,j)<<" ";
+        }
+        cout<<endl;
+    }
+    cout<<"fine!"<<endl;
+
+
+
+    B(7,0) = A_p(0,0); B(7,1) = A_p(0,1); B(7,2) = A_p(0,2); B(7,3) = A_p(0,3);
+    B(9,0) = A_p(1,0); B(9,1) = A_p(1,1); B(9,2) = A_p(1,2); B(9,3) = A_p(1,3);
+    B(11,0) = A_p(2,0); B(11,1) = A_p(2,1); B(11,2) = A_p(2,2); B(11,3) = A_p(2,3);
+    B(5,0) = A_p(3,0)/_mass; B(5,1) = A_p(3,1)/_mass; B(5,2) = A_p(3,2)/_mass; B(5,3) = A_p(3,3)/_mass;
 
     _B_k = B*_Ts;
 
@@ -329,6 +324,8 @@ void TSKF::estimation() {
     I_4.diagonal() << 1.0, 1.0, 1.0, 1.0;
     I_12.diagonal() << 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
      1.0, 1.0, 1.0, 1.0, 1.0, 1.0;
+    Eigen::Vector4d off;
+    off << 0.007, 0.007, 0.007, 0.007;
 
 
     Eigen::MatrixXd allocation_M;
@@ -339,7 +336,7 @@ void TSKF::estimation() {
 
     tskf_matrix_generation(allocation_M);
 
-        U.diagonal() << _u_p[0], _u_p[1], _u_p[2], _u_p[3];
+        U.diagonal() << _u_k[0], _u_k[1], _u_k[2], _u_k[3];
         W_k = _A_k*_V_kk_kk - _B_k*U; //coupling equation (26)
         P_gamma_kk_k = _P_gamma_kk_kk + _Qgamma; //optimal bias estimator (15)
         gamma_pred = _gamma; //OBE (14)
@@ -347,7 +344,7 @@ void TSKF::estimation() {
         H_kk_k = _C_k*V_kk_k; //coupling (28)
         P_x_kk_k = _A_k*_P_x_kk_kk*_A_k.transpose()+ _Qx  + W_k*_P_gamma_kk_kk*W_k.transpose()
         - V_kk_k*P_gamma_kk_k*V_kk_k.transpose(); //BFE (20)
-        x_kk_k = _A_k*_x_tilde + _B_k*_u_p + W_k*_gamma - V_kk_k*_gamma + _vec; //BFE (19)
+        x_kk_k = _A_k*_x_tilde + _B_k*_u_k + W_k*_gamma - V_kk_k*_gamma + _vec; //BFE (19)
         _res = _y_kk - _C_k*x_kk_k; //calcolo residui (24)
         Kx_kk = P_x_kk_k*_C_k.transpose()*(_C_k*P_x_kk_k*_C_k.transpose() + _R).inverse(); //BFE (22)
         S_kk = _C_k*P_x_kk_k*_C_k.transpose() + _R; //calcolo residui (25)
@@ -361,9 +358,9 @@ void TSKF::estimation() {
         _gamma = gamma_pred + K_gamma_kk*( _res - H_kk_k*_gamma); //OBE (16)
 
     while (ros::ok() ) {
-        pwm_computation(allocation_M);
+        // pwm_computation(allocation_M);
 
-        U.diagonal() << _u_p[0], _u_p[1], _u_p[2], _u_p[3];
+        U.diagonal() << _u_k[0], _u_k[1], _u_k[2], _u_k[3];
         W_k = _A_k*_V_kk_kk - _B_k*U; //coupling equation (26) OK
         P_gamma_kk_k = _P_gamma_kk_kk + _Qgamma; //optimal bias estimator (15) OK
         gamma_pred = _gamma; //OBE (14) OK
@@ -371,7 +368,7 @@ void TSKF::estimation() {
         H_kk_k = _C_k*V_kk_k; //coupling (28) OK
         P_x_kk_k = _A_k*_P_x_kk_kk*(_A_k.transpose()) + _Qx + W_k*_P_gamma_kk_kk*(W_k.transpose())
         - V_kk_k*P_gamma_kk_k*(V_kk_k.transpose()); //BFE (20) OK
-        x_kk_k = _A_k*_x_tilde + _B_k*_u_p + W_k*_gamma - V_kk_k*_gamma + _vec; //BFE (19) OK
+        x_kk_k = _A_k*_x_tilde + _B_k*_u_k + W_k*_gamma - V_kk_k*_gamma + _vec; //BFE (19) OK
         _res = _y_kk - _C_k*x_kk_k; //calcolo residui (24) OK
         Kx_kk = P_x_kk_k*(_C_k.transpose())*((_C_k*P_x_kk_k*(_C_k.transpose()) + _R).inverse()); //BFE (22)
         S_kk = _C_k*P_x_kk_k*(_C_k.transpose()) + _R; //calcolo residui (25) OK
@@ -382,7 +379,7 @@ void TSKF::estimation() {
         _P_gamma_kk_kk = (I_4 - K_gamma_kk*H_kk_k)*P_gamma_kk_k; //OBE (18)
         _P_x_kk_kk = (I_12 - Kx_kk*_C_k)*P_x_kk_k; //BFE (23)
         _x_tilde = x_kk_k + Kx_kk*( _y_kk - _C_k*x_kk_k ); //BFE (21)
-        _gamma = gamma_pred + K_gamma_kk*( _res - H_kk_k*_gamma); //OBE (16)
+        _gamma = (gamma_pred + K_gamma_kk*( _res - H_kk_k*_gamma)); //OBE (16)
 
         r.sleep();
 
