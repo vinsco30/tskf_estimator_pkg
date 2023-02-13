@@ -33,7 +33,8 @@ class TSKF {
                                     double moment_k,
                                     vector<int> direction );
         void tskf_matrix_generation( Eigen::MatrixXd allocation_matrix); 
-        void pwm_computation(const Eigen::MatrixXd allocation_M);
+        void pwm_computation( );
+        void controller_cb( const std_msgs::Float32MultiArray t_a_msg );
         void load_parameters();
         void run();
 
@@ -42,6 +43,7 @@ class TSKF {
         ros::NodeHandle _nh;
         ros::Subscriber _odom_sub;
         ros::Subscriber _mot_vel_sub;
+        ros::Subscriber _t_acc_sub;
         string _model_name;
         nav_msgs::Odometry _odom;
         std_msgs::Float32MultiArray _mot;
@@ -61,6 +63,7 @@ class TSKF {
         ros::Publisher _x_estim;
         ros::Publisher _fault_estim;
         ros::Publisher _residual;
+        ros::Publisher _fault_detection;
 
         //Estimator Inputs
         Eigen::Vector4d _u_k;
@@ -80,11 +83,6 @@ class TSKF {
         Eigen::Matrix<double,12,12> _P_x_kk_kk;
         Eigen::Matrix<double,6,1> _res;
 
-        //out of the loop (vanno inizializzati nello stimatore)
-        // Eigen::Matrix<double,12,4> W_k;
-        // Eigen::Matrix<double,4,4> P_gamma_kk_k;
-        // Eigen::Vector4d
-
         Eigen::Matrix<double,12,1> _vec;
 
         //Matrices modello linearizzato
@@ -99,7 +97,12 @@ class TSKF {
         
         Eigen::Matrix<double,4,4> _Ap_inv; //allocation matrix from the paper
         Eigen::Vector4d _u_p;
+        Eigen::Vector4d _t_a;
+        Eigen::Matrix4d _G;
+        Eigen::Matrix4d _t2pwm;
+        Eigen::Matrix<double,4,1> _detection;
 
+        // Eigen::Vector4d _wd2rpm_new = Eigen::Matrix<double,4,1>::Zero();
 
         //Matrice cambio riferimento
         Eigen::Matrix3d _Rx = utilities::rotx(3.14);
@@ -111,6 +114,12 @@ class TSKF {
         double _K = 175.0;
         double _Kpsi = 0.023;
         double _L = 0.2;
+
+        double _r1;
+        double _r2;
+        double _qx1;
+        double _qx2;
+        double _qgamma;
         
 
 

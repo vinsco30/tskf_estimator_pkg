@@ -3,11 +3,11 @@
  <tabbed_widget parent="main_window" name="Main Window">
   <Tab tab_name="tab1" containers="1">
    <Container>
-    <DockSplitter sizes="0.5;0.5" count="2" orientation="-">
-     <DockSplitter sizes="0.5;0.5" count="2" orientation="|">
+    <DockSplitter orientation="-" count="2" sizes="0.5;0.5">
+     <DockSplitter orientation="|" count="2" sizes="0.5;0.5">
       <DockArea name="Estimated States">
-       <plot style="Lines" flip_y="false" mode="TimeSeries" flip_x="false">
-        <range top="3.075034" bottom="-0.075375" left="2.410000" right="7.419000"/>
+       <plot mode="TimeSeries" flip_y="false" style="Lines" flip_x="false">
+        <range bottom="-0.075001" right="61.232000" left="56.240000" top="3.074761"/>
         <limitY/>
         <curve color="#1f77b4" name="/estim_states/data.0"/>
         <curve color="#d62728" name="/estim_states/data.2"/>
@@ -18,8 +18,8 @@
        </plot>
       </DockArea>
       <DockArea name="Input TSKF">
-       <plot style="Lines" flip_y="false" mode="TimeSeries" flip_x="false">
-        <range top="3.075006" bottom="-0.075396" left="2.410000" right="7.419000"/>
+       <plot mode="TimeSeries" flip_y="false" style="Lines" flip_x="false">
+        <range bottom="-0.075005" right="61.232000" left="56.240000" top="3.074838"/>
         <limitY/>
         <curve color="#9467bd" name="/y_kk/data.0"/>
         <curve color="#17becf" name="/y_kk/data.1"/>
@@ -30,11 +30,11 @@
        </plot>
       </DockArea>
      </DockSplitter>
-     <DockSplitter sizes="0.5;0.5" count="2" orientation="|">
-      <DockSplitter sizes="0.501129;0.498871" count="2" orientation="-">
+     <DockSplitter orientation="|" count="2" sizes="0.5;0.5">
+      <DockSplitter orientation="-" count="2" sizes="0.501129;0.498871">
        <DockArea name="Fault signal">
-        <plot style="Lines" flip_y="false" mode="TimeSeries" flip_x="false">
-         <range top="-0.000618" bottom="-0.000870" left="2.410000" right="7.419000"/>
+        <plot mode="TimeSeries" flip_y="false" style="Lines" flip_x="false">
+         <range bottom="-0.048909" right="61.232000" left="56.240000" top="0.053456"/>
          <limitY/>
          <curve color="#ff7f0e" name="/fault_estim/data.0"/>
          <curve color="#f14cc1" name="/fault_estim/data.1"/>
@@ -43,8 +43,8 @@
         </plot>
        </DockArea>
        <DockArea name="Rotor PWMs">
-        <plot style="Lines" flip_y="false" mode="TimeSeries" flip_x="false">
-         <range top="0.049507" bottom="0.049501" left="2.410000" right="7.419000"/>
+        <plot mode="TimeSeries" flip_y="false" style="Lines" flip_x="false">
+         <range bottom="0.021280" right="61.232000" left="56.240000" top="0.021280"/>
          <limitY/>
          <curve color="#1f77b4" name="/cmd/motor_filter/data.0"/>
          <curve color="#d62728" name="/cmd/motor_filter/data.1"/>
@@ -53,10 +53,10 @@
         </plot>
        </DockArea>
       </DockSplitter>
-      <DockSplitter sizes="0.501129;0.498871" count="2" orientation="-">
+      <DockSplitter orientation="-" count="2" sizes="0.501129;0.498871">
        <DockArea name="Residuals">
-        <plot style="Lines" flip_y="false" mode="TimeSeries" flip_x="false">
-         <range top="0.000379" bottom="-0.000397" left="2.410000" right="7.419000"/>
+        <plot mode="TimeSeries" flip_y="false" style="Lines" flip_x="false">
+         <range bottom="-0.003068" right="61.232000" left="56.240000" top="0.000280"/>
          <limitY/>
          <curve color="#bcbd22" name="/res/data.0"/>
          <curve color="#1f77b4" name="/res/data.1"/>
@@ -67,13 +67,13 @@
         </plot>
        </DockArea>
        <DockArea name="Angular Acceleration and thrust - Commanded">
-        <plot style="Lines" flip_y="false" mode="TimeSeries" flip_x="false">
-         <range top="0.870110" bottom="-35.519089" left="2.410000" right="7.419000"/>
+        <plot mode="TimeSeries" flip_y="false" style="Lines" flip_x="false">
+         <range bottom="-15.349620" right="61.232000" left="56.240000" top="3.702491"/>
          <limitY/>
-         <curve color="#1f77b4" name="/hummingbird/cmd/thrust_ang_acc/data.0"/>
-         <curve color="#d62728" name="/hummingbird/cmd/thrust_ang_acc/data.1"/>
-         <curve color="#1ac938" name="/hummingbird/cmd/thrust_ang_acc/data.2"/>
-         <curve color="#ff7f0e" name="/hummingbird/cmd/thrust_ang_acc/data.3"/>
+         <curve color="#1f77b4" name="/iris/cmd/thrust_ang_acc/data.0"/>
+         <curve color="#d62728" name="/iris/cmd/thrust_ang_acc/data.1"/>
+         <curve color="#1ac938" name="/iris/cmd/thrust_ang_acc/data.2"/>
+         <curve color="#ff7f0e" name="/iris/cmd/thrust_ang_acc/data.3"/>
         </plot>
        </DockArea>
       </DockSplitter>
@@ -88,7 +88,7 @@
  <!-- - - - - - - - - - - - - - - -->
  <Plugins>
   <plugin ID="DataLoad CSV">
-   <default delimiter="0" time_axis=""/>
+   <default time_axis="" delimiter="0"/>
   </plugin>
   <plugin ID="DataLoad MCAP"/>
   <plugin ID="DataLoad ROS bags">
