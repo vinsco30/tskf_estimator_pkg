@@ -86,7 +86,7 @@ TSKF::TSKF() {
     _Qgamma = Eigen::Matrix<double,4,4>::Zero();
     _R = Eigen::Matrix<double,6,6>::Zero();
 
-    _Qgamma.diagonal() << 0.1, 0.1, 0.1, 0.1;
+    _Qgamma.diagonal() << 1, 1, 1, 1;
 
     // _Qx.diagonal() << 1e-6, 1e-6, 1e-6, 1e-6, 1e-6, 1e-6, 1e-12, 1e-12, 1e-12, 1e-12, 1e-12, 1e-12;
     _Qx.diagonal() << 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1;
@@ -199,22 +199,41 @@ void TSKF::publisher_test() {
     ykk.data.resize(6);
     f_stim.data.resize(4);
 
-    while( ros::ok() ) {
-        
-        for( int i=0; i<12; i++ ) {
-            x_stim.data[i] = _x_tilde[i];
-        }
+    Eigen::Vector4d gamma_off;
+    Eigen::Vector4d gamma_iris = Eigen::Matrix<double,4,1>::Zero();
+    gamma_off << -0.05, 0.045, -0.05, 0.045;
+    
 
-        for( int i=0; i<_motor_num; i++ ) {
+    while( ros::ok() ) {
+
+        if( _model_name == "iris" ) {
+            gamma_iris = _gamma + gamma_off;
+            for( int i=0; i<_motor_num; i++ ) {
+                veloc.data[i] = _u_k(i);
+                f_stim.data[i] = gamma_iris(i);
+                if ( gamma_iris(i) < -0.15 )
+                    _detection(i) = true;
+                else
+                    _detection(i) = false;
+                detection.data[i] = _detection(i);
+            }
+        }
+        else {
+            
+            for( int i=0; i<_motor_num; i++ ) {
             veloc.data[i] = _u_k(i);
             f_stim.data[i] = _gamma(i);
             if ( _gamma(i) < -0.15 )
                 _detection(i) = true;
             else
                 _detection(i) = false;
-            detection.data[i] = _detection(i);
+                detection.data[i] = _detection(i);
+            }
         }
 
+        for( int i=0; i<12; i++ ) {
+            x_stim.data[i] = _x_tilde[i];
+        }
         for( int i=0; i<6; i++ ) {
             ykk.data[i] = _y_kk(i);
             res.data[i] = _res(i);
@@ -252,14 +271,14 @@ bool TSKF::generate_allocation_matrix(Eigen::MatrixXd & allocation_M,
         ROS_ERROR("The allocation matrix rank is lower than 4. This matrix specifies a not fully controllable system, check your configuration");
         return false;
     }
-
-    // for( int i=0; i<4; i++ ) {
-    //     for( int j=0; j<motor_size; j++ ) {
-    //         cout<<allocation_M(i,j)<<", ";
-    //     }
-    //     cout<<endl;
-    // }
-    // cout<<"fine!!"<<endl;
+    cout<<"Matrice allocazione modello iris"<<endl;
+    for( int i=0; i<4; i++ ) {
+        for( int j=0; j<motor_size; j++ ) {
+            cout<<allocation_M(i,j)<<", ";
+        }
+        cout<<endl;
+    }
+    cout<<"fine!!"<<endl;
 
     return true;
 }
@@ -298,9 +317,12 @@ void TSKF::tskf_matrix_generation( Eigen::MatrixXd allocation_M ) {
     I(3, 3) = 1;
 
     _t2pwm = A_p.transpose() * (A_p*A_p.transpose()).inverse()*I;
+    // _t2pwm = A_p.inverse();
+
+    cout<<"Allocazione dal paper"<<endl;
     for( int i=0; i<4; i++ ) {
         for( int j=0; j<4; j++ ) {
-            cout<<_t2pwm(i,j)<<", ";
+            cout<<A_p(i,j)<<", ";
         }
         cout<<endl;
     }
