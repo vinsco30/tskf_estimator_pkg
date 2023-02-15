@@ -1,15 +1,17 @@
 # tskf_estimator_pkg
 Estimator based on Two Stage Kalman Filter [1]
 
-### Done
-- Estimator function
-- Coversion of input from the Gazebo from NED to ENU)
-- Everything done only on hummingbird model
-- Tests with the estimator (it works but very slowly)
+### Inputs
+- Commanded vertical thrust and angular velocities
+- Drone's linear positions and angular velocities 
 
-### To Do
-- Improvement of the estimation (check the function and conversion from the models and the paper)
-- Implementation for the other gazebo models
+
+### Outputs
+- /fault_estim: estimation of the fault value (no very accurate)
+- /f_detection: boolen vector which indicates the faulty motors
+
+### Tested
+- Configuration files for Hummingbird (+ configuration) and Iris (x configuration)
 
 ## References
 <a id="1">[1]</a> 
