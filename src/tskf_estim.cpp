@@ -271,14 +271,6 @@ bool TSKF::generate_allocation_matrix(Eigen::MatrixXd & allocation_M,
         ROS_ERROR("The allocation matrix rank is lower than 4. This matrix specifies a not fully controllable system, check your configuration");
         return false;
     }
-    cout<<"Matrice allocazione modello iris"<<endl;
-    for( int i=0; i<4; i++ ) {
-        for( int j=0; j<motor_size; j++ ) {
-            cout<<allocation_M(i,j)<<", ";
-        }
-        cout<<endl;
-    }
-    cout<<"fine!!"<<endl;
 
     return true;
 }
@@ -318,15 +310,6 @@ void TSKF::tskf_matrix_generation( Eigen::MatrixXd allocation_M ) {
 
     _t2pwm = A_p.transpose() * (A_p*A_p.transpose()).inverse()*I;
     // _t2pwm = A_p.inverse();
-
-    cout<<"Allocazione dal paper"<<endl;
-    for( int i=0; i<4; i++ ) {
-        for( int j=0; j<4; j++ ) {
-            cout<<A_p(i,j)<<", ";
-        }
-        cout<<endl;
-    }
-    cout<<"fine!!"<<endl;
 
 }
 
