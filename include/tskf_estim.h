@@ -4,6 +4,7 @@
 #include <Eigen/Eigen>
 #include "gazebo_msgs/ModelStates.h"
 #include "std_msgs/Float32MultiArray.h"
+#include "std_msgs/Bool.h"
 #include "tf/tf.h"
 #include <Eigen/Geometry>
 #include "utils.h"
@@ -36,6 +37,8 @@ class TSKF {
         void pwm_computation( );
         void controller_cb( const std_msgs::Float32MultiArray t_a_msg );
         void load_parameters();
+        void estimator_reset();
+        void reset_req_cb( std_msgs::Bool );
         void run();
 
     private:
@@ -44,6 +47,8 @@ class TSKF {
         ros::Subscriber _odom_sub;
         ros::Subscriber _mot_vel_sub;
         ros::Subscriber _t_acc_sub;
+        ros::Subscriber _estimator_reset_req;
+        ros::Publisher _estimator_active;
         string _model_name;
         nav_msgs::Odometry _odom;
         std_msgs::Float32MultiArray _mot;
@@ -120,6 +125,7 @@ class TSKF {
         double _qx1;
         double _qx2;
         double _qgamma;
+        bool _est_res = false;
         
 
 

@@ -72,7 +72,7 @@ TSKF::TSKF() {
     _x_hat << 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
         0.0, 0.0, 0.0, 0.0, 0.0, 0.0;
       
-    _x_tilde << 0.0, 0.0, 0.0, 0.0, 3.0, 0.0,
+    _x_tilde << 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
         0.0, 0.0, 0.0, 0.0, 0.0, 0.0;
 
     _gamma << 0.0, 0.0, 0.0, 0.0;
@@ -133,6 +133,8 @@ TSKF::TSKF() {
     _residual = _nh.advertise<std_msgs::Float32MultiArray>( "/res", 0 );
     _fault_detection = _nh.advertise<std_msgs::Float32MultiArray>("/f_detection", 0 );
     _t_acc_sub = _nh.subscribe( _model_name + "/cmd/thrust_ang_acc", 0, &TSKF::controller_cb, this );
+    _estimator_reset_req = _nh.subscribe("/lee/sys_reset", 1, &TSKF::reset_req_cb, this);
+    _estimator_active = _nh.advertise< std_msgs::Bool >("/estimator_active", 0);
 }
 
 void TSKF::odometry_cb (const nav_msgs::Odometry odometry_msg) {
@@ -181,6 +183,21 @@ void TSKF::pwm_computation() {
     _u_k = _t2pwm*_t_a;
 }
 
+void TSKF::reset_req_cb( std_msgs::Bool d) {
+  _est_res = d.data;
+}
+
+void TSKF::estimator_reset() {
+    _x_hat << 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0;
+
+    _res = Eigen::Matrix<double,6,1>::Zero();
+    _V_kk_kk = Eigen::Matrix<double,12,4>::Zero();
+    _P_gamma_kk_kk = Eigen::Matrix<double,4,4>::Zero();
+    _P_x_kk_kk = Eigen::Matrix<double,12,12>::Zero();
+
+}
+
 
 
 void TSKF::publisher_test() {
@@ -205,8 +222,8 @@ void TSKF::publisher_test() {
     
 
     while( ros::ok() ) {
-
-        if( _model_name == "iris" ) {
+	
+        if( _model_name != "hummingbird" ) {
             gamma_iris = _gamma + gamma_off;
             for( int i=0; i<_motor_num; i++ ) {
                 veloc.data[i] = _u_k(i);
@@ -229,7 +246,8 @@ void TSKF::publisher_test() {
                 _detection(i) = false;
                 detection.data[i] = _detection(i);
             }
-        }
+        } 
+
 
         for( int i=0; i<12; i++ ) {
             x_stim.data[i] = _x_tilde[i];
@@ -367,7 +385,22 @@ void TSKF::estimation() {
     _x_tilde = x_kk_k + Kx_kk*( _y_kk - _C_k*x_kk_k ); //BFE (21)
     _gamma = gamma_pred + K_gamma_kk*( _res - H_kk_k*_gamma); //OBE (16)
 
+    std_msgs::Bool e_active;
+    e_active.data = false;
+
     while (ros::ok() ) {
+
+        if( _est_res == true ) {
+            e_active.data = false;
+            _estimator_active.publish( e_active );
+            ROS_INFO("System reset");
+            for(int i=0; i<_motor_num; i++) _gamma[i] = 0.0;
+            estimator_reset();
+            _est_res = false;
+        }
+        else { 
+        e_active.data = true;
+        _estimator_active.publish( e_active );
         pwm_computation();
         U.diagonal() << _u_k[0], _u_k[1], _u_k[2], _u_k[3];
         W_k = _A_k*_V_kk_kk - _B_k*U; //coupling equation (26) OK
@@ -389,6 +422,8 @@ void TSKF::estimation() {
         _P_x_kk_kk = (I_12 - Kx_kk*_C_k)*P_x_kk_k; //BFE (23)
         _x_tilde = x_kk_k + Kx_kk*( _y_kk - _C_k*x_kk_k ); //BFE (21)
         _gamma = (gamma_pred + K_gamma_kk*( _res - H_kk_k*_gamma)); //OBE (16)
+
+        }
 
         r.sleep();
 
