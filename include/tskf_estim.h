@@ -7,6 +7,8 @@
 #include "std_msgs/Bool.h"
 #include "tf/tf.h"
 #include <Eigen/Geometry>
+#include <fstream>
+#include <iostream>
 #include "utils.h"
 
 using namespace std;
@@ -39,6 +41,8 @@ class TSKF {
         void load_parameters();
         void estimator_reset();
         void reset_req_cb( std_msgs::Bool );
+        void fault_generated_cb( const std_msgs::Float32MultiArray );
+        void write_file();
         void run();
 
     private:
@@ -48,6 +52,7 @@ class TSKF {
         ros::Subscriber _mot_vel_sub;
         ros::Subscriber _t_acc_sub;
         ros::Subscriber _estimator_reset_req;
+        ros::Subscriber _f_generated;
         ros::Publisher _estimator_active;
         string _model_name;
         nav_msgs::Odometry _odom;
@@ -106,6 +111,7 @@ class TSKF {
         Eigen::Matrix4d _G;
         Eigen::Matrix4d _t2pwm;
         Eigen::Matrix<double,4,1> _detection;
+        Eigen::Matrix<double,4,1> _generation;
 
         // Eigen::Vector4d _wd2rpm_new = Eigen::Matrix<double,4,1>::Zero();
 

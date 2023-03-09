@@ -135,6 +135,7 @@ TSKF::TSKF() {
     _t_acc_sub = _nh.subscribe( _model_name + "/cmd/thrust_ang_acc", 0, &TSKF::controller_cb, this );
     _estimator_reset_req = _nh.subscribe("/lee/sys_reset", 1, &TSKF::reset_req_cb, this);
     _estimator_active = _nh.advertise< std_msgs::Bool >("/estimator_active", 0);
+    _f_generated = _nh.subscribe( "/lee/faults", 0, &TSKF::fault_generated_cb, this );
 }
 
 void TSKF::odometry_cb (const nav_msgs::Odometry odometry_msg) {
@@ -185,6 +186,10 @@ void TSKF::pwm_computation() {
 
 void TSKF::reset_req_cb( std_msgs::Bool d) {
   _est_res = d.data;
+}
+
+void TSKF::fault_generated_cb( const std_msgs::Float32MultiArray fault_gen ) {
+    _generation << fault_gen.data[0], fault_gen.data[1], fault_gen.data[2], fault_gen.data[3];
 }
 
 void TSKF::estimator_reset() {
@@ -331,11 +336,70 @@ void TSKF::tskf_matrix_generation( Eigen::MatrixXd allocation_M ) {
 
 }
 
+void TSKF::write_file() {
+    ros::Rate r( _estim_rate );
+    double init_sim=0;
+    double fin_sim=0;
+    double sim_time=0;
+    int cnt=1;
+    std::ofstream sim_file;
+    sim_file.open( "/home/vinsco/Desktop/simulations3.csv" );
+    if ( sim_file.is_open() ) {
+        ROS_INFO("File opened");
+    } 
+    else {
+        ROS_INFO("Error opening file");
+        exit(0);
+    }
+    sim_file << "Time, ,f1_det,f2_det,f3_det,f4_det, ,f1_gen,f2_gen,f3_gen,f4_gen, ,system_reset,\n";
+    while( ros::ok() ) {
+        if (_est_res == false) {
+            //if( _est_res == false ) {
+                
+                init_sim = ros::Time::now().toSec();
+                sim_file << ros::Time::now().toSec() <<","<<" "<<","<< _detection(0) <<","<< _detection(1)<<","<<_detection(2)<<","<<_detection(3)<<","<<" "<<",";
+                sim_file << _generation(0)<<","<<_generation(1)<<","<<_generation(2)<<","<<_generation(3)<<","<<" "<<","<<_est_res<<",\n";
+            //}
+        }
+        if ( _est_res == true ) {
+            sim_file << "Simulation n° "<<cnt<<"\n";
+            fin_sim = ros::Time::now().toSec();
+            sim_time = fin_sim-init_sim;
+            sim_file << "Elapsed time:, "<< sim_time<<"\n";
+            sim_file << "-----,-----,-----,-----,-----,-----,-----,-----,-----,-----,-----,-----,-----,-----,\n";
+            cnt++;
+        }
+
+        r.sleep();
+    }
+    //     sim_file << "Time, ,f1_det,f2_det,f3_det,f4_det, ,f1_gen,f2_gen,f3_gen,f4_gen, ,system_reset,\n";
+    // while( ros::ok() ) {
+    //     if( _generation(0)!=0 | _generation(1)!=0 | _generation(2)!=0 | _generation(3)!=0 ) {
+    //         init_sim=ros::Time::now().toSec();
+    //         sim_file << ros::Time::now().toSec() <<","<<" "<<","<< _detection(0) <<","<< _detection(1)<<","<<_detection(2)<<","<<_detection(3)<<","<<" "<<",";
+    //         sim_file << _generation(0)<<","<<_generation(1)<<","<<_generation(2)<<","<<_generation(3)<<","<<" "<<","<<_est_res<<",\n";
+    //         if( _est_res == true ) {
+    //             fin_sim = 0;
+    //             sim_file << "Simulation time: "
+    //         }
+    //     }
+
+
+    //     r.sleep();
+    // }
+    // sim_file << ros::Time::now().toSec() <<"," << _detection(0) <<","<< _detection(1)<<",";<<_detection(2)<<","<<_detection(3)<<",\n";
+    sim_file.close();
+    if ( !sim_file.is_open() ) {
+        ROS_INFO("File closed");
+    }
+
+}
+
 void TSKF::estimation() {
     
     ros::Rate r( _estim_rate );
 
-
+    // write_file();
     //Variabili del tskf usate solo in estimation
     Eigen::Matrix<double,12,4> W_k =Eigen::Matrix<double,12,4>::Zero();             //coupling
     Eigen::Matrix<double,4,4> P_gamma_kk_k = Eigen::Matrix<double,4,4>::Zero();     //predizione P_gamma
@@ -387,6 +451,16 @@ void TSKF::estimation() {
 
     std_msgs::Bool e_active;
     e_active.data = false;
+    // std::ofstream sim_file;
+    // sim_file.open( "/home/vinsco/Desktop/simulations.csv" );
+    // if ( sim_file.is_open() ) {
+    //     ROS_INFO("File opened");
+    // } 
+    // else {
+    //     ROS_INFO("Error opening file");
+    //     exit(0);
+    // }
+    // int cnt=0;
 
     while (ros::ok() ) {
 
@@ -423,6 +497,16 @@ void TSKF::estimation() {
         _x_tilde = x_kk_k + Kx_kk*( _y_kk - _C_k*x_kk_k ); //BFE (21)
         _gamma = (gamma_pred + K_gamma_kk*( _res - H_kk_k*_gamma)); //OBE (16)
 
+
+        // if (cnt<100) {
+        //     // sim_file << "Traiettoria 1"
+        //     sim_file << ros::Time::now().toSec() <<"," << _detection(0) <<","<< _detection(1)<<","<<_detection(2)<<","<<_detection(3)<<",\n";
+        //     cnt++;
+        // }
+        
+
+        
+
         }
 
         r.sleep();
@@ -436,6 +520,7 @@ void TSKF::run() {
 
     boost::thread estimation_t( &TSKF::estimation, this );
     boost::thread publishr_test_t( &TSKF::publisher_test, this );
+    boost::thread write_file_t( &TSKF::write_file, this );
     ros::spin();
 }
 
