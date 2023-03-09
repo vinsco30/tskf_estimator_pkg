@@ -61,6 +61,10 @@ void TSKF::load_parameters() {
         _estim_rate =  100;
     }
 
+    if( !_nh.getParam("write_on_file", _write_on_file) ) {
+        _write_on_file = false;
+    }
+
 }
 
 TSKF::TSKF() {
@@ -136,6 +140,8 @@ TSKF::TSKF() {
     _estimator_reset_req = _nh.subscribe("/lee/sys_reset", 1, &TSKF::reset_req_cb, this);
     _estimator_active = _nh.advertise< std_msgs::Bool >("/estimator_active", 0);
     _f_generated = _nh.subscribe( "/lee/faults", 0, &TSKF::fault_generated_cb, this );
+    _ctrl_status = _nh.subscribe( "/lee/controller_active", 0, &TSKF::ctrl_status_cb, this );
+    _landed_status = _nh.subscribe( "/lee/landed", 0, &TSKF::landed_status_cb, this );
 }
 
 void TSKF::odometry_cb (const nav_msgs::Odometry odometry_msg) {
@@ -184,12 +190,20 @@ void TSKF::pwm_computation() {
     _u_k = _t2pwm*_t_a;
 }
 
-void TSKF::reset_req_cb( std_msgs::Bool d) {
+void TSKF::reset_req_cb( const std_msgs::Bool d) {
   _est_res = d.data;
 }
 
 void TSKF::fault_generated_cb( const std_msgs::Float32MultiArray fault_gen ) {
     _generation << fault_gen.data[0], fault_gen.data[1], fault_gen.data[2], fault_gen.data[3];
+}
+
+void TSKF::ctrl_status_cb( const  std_msgs::Bool ca ) {
+    _ctrl_active = ca.data;
+}
+
+void TSKF::landed_status_cb( const std_msgs::Bool land ) {
+    _landed_active = land.data;
 }
 
 void TSKF::estimator_reset() {
@@ -343,7 +357,7 @@ void TSKF::write_file() {
     double sim_time=0;
     int cnt=1;
     std::ofstream sim_file;
-    sim_file.open( "/home/vinsco/Desktop/simulations3.csv" );
+    sim_file.open( "/home/simulations.csv" );
     if ( sim_file.is_open() ) {
         ROS_INFO("File opened");
     } 
@@ -351,22 +365,24 @@ void TSKF::write_file() {
         ROS_INFO("Error opening file");
         exit(0);
     }
-    sim_file << "Time, ,f1_det,f2_det,f3_det,f4_det, ,f1_gen,f2_gen,f3_gen,f4_gen, ,system_reset,\n";
+    sim_file << "Time, ,f1_det,f2_det,f3_det,f4_det, ,f1_gen,f2_gen,f3_gen,f4_gen, ,system_reset, ,controller_active, ,landed_status\n";
     while( ros::ok() ) {
         if (_est_res == false) {
             //if( _est_res == false ) {
                 
                 init_sim = ros::Time::now().toSec();
                 sim_file << ros::Time::now().toSec() <<","<<" "<<","<< _detection(0) <<","<< _detection(1)<<","<<_detection(2)<<","<<_detection(3)<<","<<" "<<",";
-                sim_file << _generation(0)<<","<<_generation(1)<<","<<_generation(2)<<","<<_generation(3)<<","<<" "<<","<<_est_res<<",\n";
+                sim_file << _generation(0)<<","<<_generation(1)<<","<<_generation(2)<<","<<_generation(3)<<","<<" "<<","<<_est_res<<","<<" ,"<<_ctrl_active<<", ,";
+                sim_file << _landed_active<<",\n";
             //}
         }
         if ( _est_res == true ) {
+            ROS_INFO("Simulation n: %i",cnt);
             sim_file << "Simulation n° "<<cnt<<"\n";
             fin_sim = ros::Time::now().toSec();
             sim_time = fin_sim-init_sim;
             sim_file << "Elapsed time:, "<< sim_time<<"\n";
-            sim_file << "-----,-----,-----,-----,-----,-----,-----,-----,-----,-----,-----,-----,-----,-----,\n";
+            sim_file << "-----,-----,-----,-----,-----,-----,-----,-----,-----,-----,-----,-----,-----,-----,-----,-----,-----,\n";
             cnt++;
         }
 
@@ -520,7 +536,9 @@ void TSKF::run() {
 
     boost::thread estimation_t( &TSKF::estimation, this );
     boost::thread publishr_test_t( &TSKF::publisher_test, this );
+    //if( _write_on_file ) { 
     boost::thread write_file_t( &TSKF::write_file, this );
+    //}
     ros::spin();
 }
 

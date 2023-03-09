@@ -42,6 +42,8 @@ class TSKF {
         void estimator_reset();
         void reset_req_cb( std_msgs::Bool );
         void fault_generated_cb( const std_msgs::Float32MultiArray );
+        void ctrl_status_cb( const std_msgs::Bool );
+        void landed_status_cb( const std_msgs::Bool );
         void write_file();
         void run();
 
@@ -54,6 +56,8 @@ class TSKF {
         ros::Subscriber _estimator_reset_req;
         ros::Subscriber _f_generated;
         ros::Publisher _estimator_active;
+        ros::Subscriber _ctrl_status;
+        ros::Subscriber _landed_status;
         string _model_name;
         nav_msgs::Odometry _odom;
         std_msgs::Float32MultiArray _mot;
@@ -66,6 +70,9 @@ class TSKF {
         double _gravity;
         Eigen::Matrix3d _inertia;
         vector<double> _rotor_angles;
+        bool _ctrl_active = false;
+        bool _landed_active = false;
+        bool _write_on_file;
 
         //publisher per debug
         ros::Publisher _motori;
