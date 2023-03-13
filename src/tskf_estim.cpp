@@ -357,7 +357,7 @@ void TSKF::write_file() {
     double sim_time=0;
     int cnt=1;
     std::ofstream sim_file;
-    sim_file.open( "/home/simulations.csv" );
+    sim_file.open( "/home/vinsco/Desktop/simulations.csv" );
     if ( sim_file.is_open() ) {
         ROS_INFO("File opened");
     } 
@@ -378,10 +378,6 @@ void TSKF::write_file() {
         }
         if ( _est_res == true ) {
             ROS_INFO("Simulation n: %i",cnt);
-            sim_file << "Simulation n° "<<cnt<<"\n";
-            fin_sim = ros::Time::now().toSec();
-            sim_time = fin_sim-init_sim;
-            sim_file << "Elapsed time:, "<< sim_time<<"\n";
             sim_file << "-----,-----,-----,-----,-----,-----,-----,-----,-----,-----,-----,-----,-----,-----,-----,-----,-----,\n";
             cnt++;
         }
@@ -536,9 +532,9 @@ void TSKF::run() {
 
     boost::thread estimation_t( &TSKF::estimation, this );
     boost::thread publishr_test_t( &TSKF::publisher_test, this );
-    //if( _write_on_file ) { 
+    if( _write_on_file ) { 
     boost::thread write_file_t( &TSKF::write_file, this );
-    //}
+    }
     ros::spin();
 }
 
