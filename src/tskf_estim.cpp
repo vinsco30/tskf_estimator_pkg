@@ -351,13 +351,10 @@ void TSKF::tskf_matrix_generation( Eigen::MatrixXd allocation_M ) {
 }
 
 void TSKF::write_file() {
-    ros::Rate r( _estim_rate );
-    double init_sim=0;
-    double fin_sim=0;
-    double sim_time=0;
+    ros::Rate r( 100 );
     int cnt=1;
     std::ofstream sim_file;
-    sim_file.open( "/home/vinsco/Desktop/simulations.csv" );
+    sim_file.open( "/home/vinsco/Desktop/Simulations/single_simulations/simulations_new3.txt" );
     if ( sim_file.is_open() ) {
         ROS_INFO("File opened");
     } 
@@ -365,46 +362,24 @@ void TSKF::write_file() {
         ROS_INFO("Error opening file");
         exit(0);
     }
-    sim_file << "Time, ,f1_det,f2_det,f3_det,f4_det, ,f1_gen,f2_gen,f3_gen,f4_gen, ,system_reset, ,controller_active, ,landed_status\n";
+    ROS_INFO("Simulation n: %i",cnt);
+    sim_file << "time f1_det f2_det f3_det f4_det f1_gen f2_gen f3_gen f4_gen system_reset controller_active landed_status z_pos\n";
     while( ros::ok() ) {
         if (_est_res == false) {
-            //if( _est_res == false ) {
-                
-                init_sim = ros::Time::now().toSec();
-                sim_file << ros::Time::now().toSec() <<","<<" "<<","<< _detection(0) <<","<< _detection(1)<<","<<_detection(2)<<","<<_detection(3)<<","<<" "<<",";
-                sim_file << _generation(0)<<","<<_generation(1)<<","<<_generation(2)<<","<<_generation(3)<<","<<" "<<","<<_est_res<<","<<" ,"<<_ctrl_active<<", ,";
-                sim_file << _landed_active<<",\n";
-            //}
+                sim_file << ros::Time::now().toSec() <<" "<< _detection(0) <<" "<< _detection(1)<<" "<<_detection(2)<<" "<<_detection(3)<<" ";
+                sim_file << _generation(0)<<" "<<_generation(1)<<" "<<_generation(2)<<" "<<_generation(3)<<" "<<_est_res<<" "<<_ctrl_active<<" ";
+                sim_file << _landed_active<<" "<<_y_kk(2)<<"\n";
+
         }
-        if ( _est_res == true ) {
-            ROS_INFO("Simulation n: %i",cnt);
-            sim_file << "-----,-----,-----,-----,-----,-----,-----,-----,-----,-----,-----,-----,-----,-----,-----,-----,-----,\n";
+        else {
             cnt++;
+            ROS_INFO("Simulation n: %i",cnt);
+            sim_file << "time f1_det f2_det f3_det f4_det f1_gen f2_gen f3_gen f4_gen system_reset controller_active landed_status z_pos\n";
+            _est_res = false;
         }
 
         r.sleep();
     }
-    //     sim_file << "Time, ,f1_det,f2_det,f3_det,f4_det, ,f1_gen,f2_gen,f3_gen,f4_gen, ,system_reset,\n";
-    // while( ros::ok() ) {
-    //     if( _generation(0)!=0 | _generation(1)!=0 | _generation(2)!=0 | _generation(3)!=0 ) {
-    //         init_sim=ros::Time::now().toSec();
-    //         sim_file << ros::Time::now().toSec() <<","<<" "<<","<< _detection(0) <<","<< _detection(1)<<","<<_detection(2)<<","<<_detection(3)<<","<<" "<<",";
-    //         sim_file << _generation(0)<<","<<_generation(1)<<","<<_generation(2)<<","<<_generation(3)<<","<<" "<<","<<_est_res<<",\n";
-    //         if( _est_res == true ) {
-    //             fin_sim = 0;
-    //             sim_file << "Simulation time: "
-    //         }
-    //     }
-
-
-    //     r.sleep();
-    // }
-    // sim_file << ros::Time::now().toSec() <<"," << _detection(0) <<","<< _detection(1)<<",";<<_detection(2)<<","<<_detection(3)<<",\n";
-    sim_file.close();
-    if ( !sim_file.is_open() ) {
-        ROS_INFO("File closed");
-    }
-
 }
 
 void TSKF::estimation() {
@@ -482,7 +457,7 @@ void TSKF::estimation() {
             ROS_INFO("System reset");
             for(int i=0; i<_motor_num; i++) _gamma[i] = 0.0;
             estimator_reset();
-            _est_res = false;
+            // _est_res = false;
         }
         else { 
         e_active.data = true;
