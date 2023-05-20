@@ -354,7 +354,7 @@ void TSKF::write_file() {
     ros::Rate r( 100 );
     int cnt=1;
     std::ofstream sim_file;
-    sim_file.open( "/home/vinsco/Desktop/Simulations/single_simulations/simulations_new3.txt" );
+    sim_file.open( "/home/vinsco/Desktop/Simulations/simulations_humm.txt" );
     if ( sim_file.is_open() ) {
         ROS_INFO("File opened");
     } 
